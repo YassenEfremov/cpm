@@ -1,0 +1,73 @@
+\documentclass{report}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,bulgarian]{babel}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=darkgray,
+    filecolor=magenta,
+    urlcolor=blue,
+    pdftitle={Diploma},
+    pdfpagemode=FullScreen,
+}
+
+\title{Diploma}
+\author{Ясен Ефремов}
+\date{November 2022}
+
+
+\begin{document}
+
+\maketitle
+
+\chapter*{Увод}
+
+\section*{Зад.}
+\begin{itemize}
+    \item Инсталация, премахване и изброяване на пакети
+    \item Управление на зависимостите на даден пакет
+    \item Локално съхранение на списък с инсталираните пакети
+    \item Подаване на обратна връзка на потребителя чрез текстови съобщения (функционалност на logger)
+    \item Описание на пакетите и процеса им на инсталация чрез файлове
+\end{itemize}
+
+\section*{Доп.}
+\begin{itemize}
+    \item Поддръжка за множество платформи
+\end{itemize}
+
+
+\chapter{Методи и технологии за реализиране на}
+\input{chapters/chapter1}
+
+
+\chapter{Проектиране на структурата на}
+\input{chapters/chapter2}
+
+
+\chapter{Програмна реализация на}
+\input{chapters/chapter3}
+
+
+\chapter{Ръководство за потребителя}
+\input{chapters/chapter4}
+
+
+\chapter*{Заключение}
+
+
+\chapter{Използвана литература}
+
+\begin{itemize}
+  \item \url{https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527}
+\end{itemize}
+
+
+\tableofcontents
+
+\end{document}

@@ -1,2 +1,309 @@
+##### TeX #####
+
+## Core latex/pdflatex auxiliary files:
+doc/*.aux
+doc/*.lof
+doc/*.log
+doc/*.lot
+doc/*.fls
+doc/*.out
+doc/*.toc
+doc/*.fmt
+doc/*.fot
+doc/*.cb
+doc/*.cb2
+doc/.*.lb
+
+## Intermediate documents:
+doc/*.dvi
+doc/*.xdv
+doc/*-converted-to.*
+# these rules might exclude image files for figures etc.
+# *.ps
+# *.eps
+# *.pdf
+
+## Generated if empty string is given at "Please type another file name for output:"
+doc/.pdf
+
+## Bibliography auxiliary files (bibtex/biblatex/biber):
+doc/*.bbl
+doc/*.bcf
+doc/*.blg
+doc/*-blx.aux
+doc/*-blx.bib
+doc/*.run.xml
+
+## Build tool auxiliary files:
+doc/*.fdb_latexmk
+doc/*.synctex
+doc/*.synctex(busy)
+doc/*.synctex.gz
+doc/*.synctex.gz(busy)
+doc/*.pdfsync
+
+## Build tool directories for auxiliary files
+# latexrun
+doc/latex.out/
+
+## Auxiliary and intermediate files from other packages:
+# algorithms
+doc/*.alg
+doc/*.loa
+
+# achemso
+doc/acs-*.bib
+
+# amsthm
+doc/*.thm
+
+# beamer
+doc/*.nav
+doc/*.pre
+doc/*.snm
+doc/*.vrb
+
+# changes
+doc/*.soc
+
+# comment
+doc/*.cut
+
+# cprotect
+doc/*.cpt
+
+# elsarticle (documentclass of Elsevier journals)
+doc/*.spl
+
+# endnotes
+doc/*.ent
+
+# fixme
+doc/*.lox
+
+# feynmf/feynmp
+doc/*.mf
+doc/*.mp
+doc/*.t[1-9]
+doc/*.t[1-9][0-9]
+doc/*.tfm
+
+#(r)(e)ledmac/(r)(e)ledpar
+doc/*.end
+doc/*.?end
+doc/*.[1-9]
+doc/*.[1-9][0-9]
+doc/*.[1-9][0-9][0-9]
+doc/*.[1-9]R
+doc/*.[1-9][0-9]R
+doc/*.[1-9][0-9][0-9]R
+doc/*.eledsec[1-9]
+doc/*.eledsec[1-9]R
+doc/*.eledsec[1-9][0-9]
+doc/*.eledsec[1-9][0-9]R
+doc/*.eledsec[1-9][0-9][0-9]
+doc/*.eledsec[1-9][0-9][0-9]R
+
+# glossaries
+doc/*.acn
+doc/*.acr
+doc/*.glg
+doc/*.glo
+doc/*.gls
+doc/*.glsdefs
+doc/*.lzo
+doc/*.lzs
+doc/*.slg
+doc/*.slo
+doc/*.sls
+
+# uncomment this for glossaries-extra (will ignore makeindex's style files!)
+# *.ist
+
+# gnuplot
+doc/*.gnuplot
+doc/*.table
+
+# gnuplottex
+doc/*-gnuplottex-*
+
+# gregoriotex
+doc/*.gaux
+doc/*.glog
+doc/*.gtex
+
+# htlatex
+doc/*.4ct
+doc/*.4tc
+doc/*.idv
+doc/*.lg
+doc/*.trc
+doc/*.xref
+
+# hyperref
+doc/*.brf
+
+# knitr
+doc/*-concordance.tex
+# TODO Uncomment the next line if you use knitr and want to ignore its generated tikz files
+# *.tikz
+doc/*-tikzDictionary
+
+# listings
+doc/*.lol
+
+# luatexja-ruby
+doc/*.ltjruby
+
+# makeidx
+doc/*.idx
+doc/*.ilg
+doc/*.ind
+
+# minitoc
+doc/*.maf
+doc/*.mlf
+doc/*.mlt
+doc/*.mtc[0-9]*
+doc/*.slf[0-9]*
+doc/*.slt[0-9]*
+doc/*.stc[0-9]*
+
+# minted
+doc/_minted*
+doc/*.pyg
+
+# morewrites
+doc/*.mw
+
+# newpax
+doc/*.newpax
+
+# nomencl
+doc/*.nlg
+doc/*.nlo
+doc/*.nls
+
+# pax
+doc/*.pax
+
+# pdfpcnotes
+doc/*.pdfpc
+
+# sagetex
+doc/*.sagetex.sage
+doc/*.sagetex.py
+doc/*.sagetex.scmd
+
+# scrwfile
+doc/*.wrt
+
+# svg
+doc/svg-inkscape/
+
+# sympy
+doc/*.sout
+doc/*.sympy
+doc/sympy-plots-for-*.tex/
+
+# pdfcomment
+doc/*.upa
+doc/*.upb
+
+# pythontex
+doc/*.pytxcode
+doc/pythontex-files-*/
+
+# tcolorbox
+doc/*.listing
+
+# thmtools
+doc/*.loe
+
+# TikZ & PGF
+doc/*.dpth
+doc/*.md5
+doc/*.auxlock
+
+# titletoc
+doc/*.ptc
+
+# todonotes
+doc/*.tdo
+
+# vhistory
+doc/*.hst
+doc/*.ver
+
+# easy-todo
+doc/*.lod
+
+# xcolor
+doc/*.xcp
+
+# xmpincl
+doc/*.xmpi
+
+# xindy
+doc/*.xdy
+
+# xypic precompiled matrices and outlines
+doc/*.xyc
+doc/*.xyd
+
+# endfloat
+doc/*.ttt
+doc/*.fff
+
+# Latexian
+doc/TSWLatexianTemp*
+
+## Editors:
+# WinEdt
+doc/*.bak
+doc/*.sav
+
+# Texpad
+doc/.texpadtmp
+
+# LyX
+doc/*.lyx~
+
+# Kile
+doc/*.backup
+
+# gummi
+doc/.*.swp
+
+# KBibTeX
+doc/*~[0-9]*
+
+# TeXnicCenter
+doc/*.tps
+
+# auto folder when using emacs and auctex
+./auto/*
+doc/*.el
+
+# expex forward references with \gathertags
+doc/*-tags.tex
+
+# standalone packages
+doc/*.sta
+
+# Makeindex log files
+doc/*.lpz
+
+# xwatermark package
+doc/*.xwm
+
+# REVTeX puts footnotes in the bibliography by default, unless the nofootinbib
+# option is specified. Footnotes are the stored in a file with suffix Notes.bib.
+# Uncomment the next line to have this generated file ignored.
+#*Notes.bib
+
+
+##### Custom #####
+
 build/
 .vscode/
