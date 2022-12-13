@@ -1,6 +1,5 @@
-#include "version.h"
+#include "cli/parser.h"
 
-#include <iostream>
 #include <cstdlib>
 
 
@@ -14,9 +13,7 @@
 
 int main(int argc, char *argv[]) {
 
-    std::cout << "cpm v" << CPM_VERSION_MAJOR << "."
-                          << CPM_VERSION_MINOR << "."
-                          << CPM_VERSION_PATCH << "\n";
+    parse_args(argc, argv);
 
     return EXIT_SUCCESS;
 }
