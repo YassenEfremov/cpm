@@ -1,4 +1,4 @@
-#include "cli/parser.h"
+#include "cli/parser.hpp"
 
 #include <cstdlib>
 
@@ -13,7 +13,7 @@
 
 int main(int argc, char *argv[]) {
 
-    parse_args(argc, argv);
+    cpm::parse_args(argc, argv);
 
     return EXIT_SUCCESS;
 }
