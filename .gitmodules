@@ -1,3 +1,9 @@
 [submodule "lib/argparse"]
 	path = lib/argparse
 	url = https://github.com/p-ranav/argparse
+[submodule "lib/cpr"]
+	path = lib/cpr
+	url = https://github.com/libcpr/cpr
+[submodule "lib/zip"]
+	path = lib/zip
+	url = https://github.com/kuba--/zip

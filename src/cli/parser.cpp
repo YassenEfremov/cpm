@@ -1,6 +1,8 @@
-#include "parser.h"
+#include "parser.hpp"
 
-#include "version.h"
+#include "version.hpp"
+
+#include "../commands/install.hpp"
 
 #include "argparse/argparse.hpp"
 
@@ -9,49 +11,53 @@
 #include <cstdlib>
 
 
-void parse_args(int argc, char *argv[]){
+namespace cpm {
 
-    argparse::ArgumentParser parser("cpm", CPM_VERSION);
+    void parse_args(int argc, char *argv[]) {
 
-    // Install command
-    argparse::ArgumentParser install_command("install");
-    install_command.add_description("Install the given package/s");
-    install_command.add_argument("packages")
-        .help("Packages to install")
-        .required()
-        .nargs(argparse::nargs_pattern::at_least_one);
+        argparse::ArgumentParser parser("cpm", CPM_VERSION);
 
-    // Remove command
-    argparse::ArgumentParser remove_command("remove");
-    remove_command.add_description("Remove the given package/s");
-    remove_command.add_argument("packages")
-        .help("Packages to remove")
-        .required()
-        .nargs(argparse::nargs_pattern::at_least_one);
+        // Install command
+        argparse::ArgumentParser install_command("install");
+        install_command.add_description("Install the given package/s");
+        install_command.add_argument("packages")
+            .help("Link to a GitHub repository")
+            .required()
+            .nargs(argparse::nargs_pattern::at_least_one)
+            .action(cpm::install);
 
-    // List command
-    argparse::ArgumentParser list_command("list");
-    list_command.add_description("List all installed packages");
+        // Remove command
+        argparse::ArgumentParser remove_command("remove");
+        remove_command.add_description("Remove the given package/s");
+        remove_command.add_argument("packages")
+            .help("Packages to remove")
+            .required()
+            .nargs(argparse::nargs_pattern::at_least_one);
 
-    // Update command
-    argparse::ArgumentParser update_command("update");
-    update_command.add_description("Update the given package/s");
-    update_command.add_argument("packages")
-        .help("Packages to update")
-        .required()
-        .nargs(argparse::nargs_pattern::at_least_one);
+        // List command
+        argparse::ArgumentParser list_command("list");
+        list_command.add_description("List all installed packages");
 
-    parser.add_subparser(install_command);
-    parser.add_subparser(remove_command);
-    parser.add_subparser(list_command);
-    parser.add_subparser(update_command);
+        // Update command
+        argparse::ArgumentParser update_command("update");
+        update_command.add_description("Update the given package/s");
+        update_command.add_argument("packages")
+            .help("Packages to update")
+            .required()
+            .nargs(argparse::nargs_pattern::at_least_one);
 
-    try {
-        parser.parse_args(argc, argv);
-        if (argc < 2) throw std::runtime_error(parser.help().str());
-    } catch (const std::runtime_error &err) {
-        std::cerr << err.what() << std::endl;
-        // std::cerr << parser;
-        std::exit(EXIT_FAILURE);
+        parser.add_subparser(install_command);
+        parser.add_subparser(remove_command);
+        parser.add_subparser(list_command);
+        parser.add_subparser(update_command);
+
+        try {
+            parser.parse_args(argc, argv);
+            if (argc < 2) throw std::runtime_error(parser.help().str());
+        } catch (const std::runtime_error &err) {
+            std::cerr << err.what() << std::endl;
+            // std::cerr << parser;
+            std::exit(EXIT_FAILURE);
+        }
     }
 }
