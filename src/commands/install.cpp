@@ -39,7 +39,7 @@ namespace cpm {
         // Extract the entries from the archive into <cwd>/lib/<repo-name>-master
         struct zip_t *zip = zip_stream_open(response.text.c_str(), response.text.size(), 0, 'r');
         zip_stream_extract(response.text.c_str(), response.text.size(),
-            (fs::current_path() / "lib" / "").c_str(),
+            (fs::current_path() / "lib" / "").string().c_str(),
             [](const char *filename, void *arg) {
                 struct zip_t *zip = static_cast<struct zip_t *>(arg);
                 static int i = 1;
