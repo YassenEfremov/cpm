@@ -2,7 +2,10 @@
 
 #include "version.hpp"
 
+#include "version.hpp"
+
 #include "../commands/install.hpp"
+#include "../commands/remove.hpp"
 
 #include "argparse/argparse.hpp"
 
@@ -32,7 +35,8 @@ namespace cpm {
         remove_command.add_argument("packages")
             .help("Packages to remove")
             .required()
-            .nargs(argparse::nargs_pattern::at_least_one);
+            .nargs(argparse::nargs_pattern::at_least_one)
+            .action(cpm::remove);
 
         // List command
         argparse::ArgumentParser list_command("list");
