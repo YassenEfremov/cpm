@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 0.3.0)
+project(cpm VERSION 0.4.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -11,6 +11,7 @@ add_executable(cpm
 	src/main.cpp
 	src/cli/parser.cpp
 	src/commands/install.cpp
+	src/commands/remove.cpp
 )
 
 add_subdirectory(lib/argparse)
