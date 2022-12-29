@@ -8,6 +8,7 @@ extern "C" {
 
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include <filesystem>
 
 #include <cstdlib>
@@ -21,15 +22,15 @@ namespace cpm {
 
         fs::path repository = fs::path(package).stem();
 
-        // Check if the target directory already exists
-        if (fs::exists(fs::current_path() / "lib" / repository / "")) {
-            std::cout << "\nPackage directory already exists!" << std::endl;
-            std::exit(EXIT_SUCCESS);
-        }
-
         std::cout << "Installing package into "
             << fs::current_path() / "lib" / repository / "" << " ..."
         << std::flush;
+
+        // Check if the target directory already exists
+        if (fs::exists(fs::current_path() / "lib" / repository / "")) {
+            std::cout << std::endl;
+            throw std::invalid_argument("Package directory already exists!");
+        }
 
         // Download the repository as a zip archive (same as the green button on GitHub)
         cpr::Response response = cpr::Get(cpr::Url{package + "/archive/refs/heads/master.zip"});    // TODO: this should use the github API
@@ -49,15 +50,9 @@ namespace cpm {
         );
         std::cout << " done.\n";
 
-        try {
-            // Rename the target directory to remove the "-master" at the end
-            fs::rename(fs::current_path() / "lib" / repository += "-master/",       // TODO: the in-memory archive name should be changed instead
-                       fs::current_path() / "lib" / repository / "");
+        // Rename the target directory to remove the "-master" at the end
+        fs::rename(fs::current_path() / "lib" / repository += "-master/",           // TODO: the in-memory archive name should be changed instead
+                   fs::current_path() / "lib" / repository / "");
 
-        } catch (fs::filesystem_error &e) {
-            std::cerr << e.what() << "\n";
-            std::cerr << "Aborting installation!" << std::endl;
-            std::exit(EXIT_FAILURE);
-        }
     }
 }

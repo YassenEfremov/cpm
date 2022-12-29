@@ -2,9 +2,9 @@
 
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include <filesystem>
 
-#include <cstdlib>
 #include <cstdint>
 
 namespace fs = std::filesystem;
@@ -22,8 +22,8 @@ namespace cpm {
 
         // Check if the target directory exists
         if (!fs::exists(fs::current_path() / "lib" / repository / "")) {
-            std::cout << "\nPackage not installed!" << std::endl;
-            std::exit(EXIT_FAILURE);
+            std::cout << std::endl;
+            throw std::invalid_argument("Package not installed!");
         }
 
         std::uintmax_t n = fs::remove_all(fs::current_path() / "lib" / repository / "");
