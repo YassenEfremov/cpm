@@ -55,13 +55,9 @@ namespace cpm {
         parser.add_subparser(list_command);
         parser.add_subparser(update_command);
 
-        try {
-            parser.parse_args(argc, argv);
-            if (argc < 2) throw std::runtime_error(parser.help().str());
-        } catch (const std::runtime_error &err) {
-            std::cerr << err.what() << std::endl;
-            // std::cerr << parser;
-            std::exit(EXIT_FAILURE);
+        if (argc < 2) {
+            throw std::runtime_error(parser.help().str());
         }
+        parser.parse_args(argc, argv);
     }
 }

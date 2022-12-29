@@ -7,3 +7,6 @@
 [submodule "lib/zip"]
 	path = lib/zip
 	url = https://github.com/kuba--/zip
+[submodule "lib/spdlog"]
+	path = lib/spdlog
+	url = https://github.com/gabime/spdlog
