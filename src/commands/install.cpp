@@ -1,6 +1,7 @@
 #include "install.hpp"
 
 #include "cpr/cpr.h"
+#include "SQLiteCpp/SQLiteCpp.h"
 
 extern "C" {
     #include "zip.h"
@@ -54,5 +55,22 @@ namespace cpm {
         fs::rename(fs::current_path() / "lib" / repository += "-master/",           // TODO: the in-memory archive name should be changed instead
                    fs::current_path() / "lib" / repository / "");
 
+        // Add the installed package to the local DB
+        SQLite::Database db("packages.db3", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+        db.exec(
+            "CREATE TABLE IF NOT EXISTS installed_packages("
+                "name VARCHAR(100) NOT NULL PRIMARY KEY"
+            ");"
+        );
+
+        SQLite::Statement query(db,
+            "INSERT INTO installed_packages VALUES (?);"
+        );
+        
+        query.bind(1, repository);
+        int rows_modified = query.exec();
+
+        std::cout << "DB: modified " << rows_modified << " rows" << std::endl;
     }
 }

@@ -1,5 +1,7 @@
 #include "remove.hpp"
 
+#include "SQLiteCpp/SQLiteCpp.h"
+
 #include <iostream>
 #include <string>
 #include <stdexcept>
@@ -31,5 +33,17 @@ namespace cpm {
         std::cout << " done.\n";
 
         std::cout << "Removed " << n << " entries" << std::endl;
+
+        // Remove the package from the local DB
+        SQLite::Database db("packages.db3", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+        SQLite::Statement query(db,
+            "DELETE FROM installed_packages WHERE name = ?;"
+        );
+        
+        query.bind(1, repository);
+        int rows_modified = query.exec();
+
+        std::cout << "DB: modified " << rows_modified << " rows" << std::endl;
     }
 }

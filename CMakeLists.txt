@@ -18,6 +18,7 @@ add_subdirectory(lib/argparse)
 add_subdirectory(lib/cpr)
 add_subdirectory(lib/zip)
 add_subdirectory(lib/spdlog)
+add_subdirectory(lib/SQLiteCpp)
 
 
 target_include_directories(cpm
@@ -27,6 +28,7 @@ target_include_directories(cpm
 		lib/cpr/include
 		lib/zip/src
 		lib/spdlog/include
+		lib/SQLiteCpp/include
 )
 
 target_link_libraries(cpm
@@ -35,4 +37,5 @@ target_link_libraries(cpm
 		cpr::cpr
 		zip::zip
 		spdlog::spdlog
+		SQLiteCpp
 )
