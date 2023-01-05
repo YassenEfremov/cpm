@@ -1,8 +1,8 @@
 #include "remove.hpp"
 
+#include "spdlog/spdlog.h"
 #include "sqlite3.h"
 
-#include <iostream>
 #include <string>
 #include <stdexcept>
 #include <filesystem>
@@ -18,21 +18,22 @@ namespace cpm {
 
         fs::path repository = fs::path(package).stem();
 
-        std::cout << "Removing package from "
-            << fs::current_path() / "lib" / repository / "" << " ..."
-        << std::flush;
+        spdlog::get("stdout_logger")->info(
+            "Removing package from {} ...",
+            (fs::current_path() / "lib" / repository / "").string()
+        );
 
         // Check if the target directory exists
-        if (!fs::exists(fs::current_path() / "lib" / repository / "")) {
-            std::cout << std::endl;
+        if (!fs::exists(fs::current_path() / "lib" / repository / "")) {            // TODO: check the local package DB instead
+            spdlog::get("stdout_logger")->info("\n");
             throw std::invalid_argument("Package not installed!");
         }
 
         std::uintmax_t n = fs::remove_all(fs::current_path() / "lib" / repository / "");
 
-        std::cout << " done.\n";
+        spdlog::get("stdout_logger")->info(" done.\n");
 
-        std::cout << "Removed " << n << " entries" << std::endl;
+        spdlog::get("stdout_logger")->info("Removed {} entries\n", n);
 
         // Remove the package from the local DB
         sqlite3 *db;
@@ -50,6 +51,8 @@ namespace cpm {
         sqlite3_finalize(stmt);
         sqlite3_close(db);
 
-        std::cout << "DB: modified " << rows_modified << " rows" << std::endl;
+        spdlog::get("stdout_logger")->info(
+            "DB: modified {} rows\n", rows_modified
+        );
     }
 }

@@ -2,9 +2,11 @@
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/pattern_formatter.h"
 
 #include <iostream>
 #include <exception>
+#include <memory>
 
 #include <cstdlib>
 
@@ -12,7 +14,10 @@
 int main(int argc, char *argv[]) {
 
     auto stdout_logger = spdlog::stdout_color_mt("stdout_logger");
-    stdout_logger->set_pattern("%v");
+    stdout_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
+        "%v", spdlog::pattern_time_type::local, ""
+    ));
+
     auto stderr_logger = spdlog::stderr_color_mt("stderr_logger");
     stderr_logger->set_pattern("%^%l%$: %v");
 

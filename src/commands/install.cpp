@@ -1,5 +1,6 @@
 #include "install.hpp"
 
+#include "spdlog/spdlog.h"
 #include "cpr/cpr.h"
 #include "sqlite3.h"
 
@@ -7,7 +8,6 @@ extern "C" {
     #include "zip.h"
 }
 
-#include <iostream>
 #include <string>
 #include <stdexcept>
 #include <filesystem>
@@ -23,20 +23,21 @@ namespace cpm {
 
         fs::path repository = fs::path(package).stem();
 
-        std::cout << "Installing package into "
-            << fs::current_path() / "lib" / repository / "" << " ..."
-        << std::flush;
+        spdlog::get("stdout_logger")->info(
+            "Installing package into {} ...",
+            (fs::current_path() / "lib" / repository / "").string()
+        );
 
         // Check if the target directory already exists
-        if (fs::exists(fs::current_path() / "lib" / repository / "")) {
-            std::cout << std::endl;
+        if (fs::exists(fs::current_path() / "lib" / repository / "")) {             // TODO: check the local package DB instead
+            spdlog::get("stdout_logger")->info("\n");
             throw std::invalid_argument("Package directory already exists!");
         }
 
         // Download the repository as a zip archive (same as the green button on GitHub)
         cpr::Response response = cpr::Get(cpr::Url{package + "/archive/refs/heads/master.zip"});    // TODO: this should use the github API
 
-        std::cout << " done.\n";
+        spdlog::get("stdout_logger")->info(" done.\n");
 
         // Extract the entries from the archive into <cwd>/lib/<repo-name>-master
         struct zip_t *zip = zip_stream_open(response.text.c_str(), response.text.size(), 0, 'r');
@@ -45,11 +46,13 @@ namespace cpm {
             [](const char *filename, void *arg) {
                 struct zip_t *zip = static_cast<struct zip_t *>(arg);
                 static int i = 1;
-                std::cout << "\rExtracting archive entries " << i++ << "/" << zip_entries_total(zip);
+                spdlog::get("stdout_logger")->info(
+                    "\rExtracting archive entries {}/{}", i++, zip_entries_total(zip)
+                );
                 return EXIT_SUCCESS;
             }, zip
         );
-        std::cout << " done.\n";
+        spdlog::get("stdout_logger")->info(" done.\n");
 
         // Rename the target directory to remove the "-master" at the end
         fs::rename(fs::current_path() / "lib" / repository += "-master/",           // TODO: the in-memory archive name should be changed instead
@@ -79,6 +82,8 @@ namespace cpm {
         sqlite3_finalize(stmt);
         sqlite3_close(db);
 
-        std::cout << "DB: modified " << rows_modified << " rows" << std::endl;
+        spdlog::get("stdout_logger")->info(
+            "DB: modified {} rows\n", rows_modified
+        );
     }
 }
