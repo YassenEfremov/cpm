@@ -1,7 +1,7 @@
 #include "install.hpp"
 
 #include "cpr/cpr.h"
-#include "SQLiteCpp/SQLiteCpp.h"
+#include "sqlite3.h"
 
 extern "C" {
     #include "zip.h"
@@ -56,20 +56,28 @@ namespace cpm {
                    fs::current_path() / "lib" / repository / "");
 
         // Add the installed package to the local DB
-        SQLite::Database db("packages.db3", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+        sqlite3 *db;
+        char *err;
+        sqlite3_open("lib/packages.db3", &db);
 
-        db.exec(
+        sqlite3_exec(db,
             "CREATE TABLE IF NOT EXISTS installed_packages("
                 "name VARCHAR(100) NOT NULL PRIMARY KEY"
             ");"
-        );
+        , nullptr, 0, &err);
 
-        SQLite::Statement query(db,
+        sqlite3_stmt *stmt;
+        sqlite3_prepare(db,
             "INSERT INTO installed_packages VALUES (?);"
-        );
+        , -1, &stmt, nullptr);
         
-        query.bind(1, repository);
-        int rows_modified = query.exec();
+        sqlite3_bind_text(stmt, 1, repository.string().c_str(), repository.string().length(), SQLITE_STATIC);
+        sqlite3_step(stmt);
+        int rows_modified = sqlite3_total_changes(db);
+
+        sqlite3_free(err);
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
 
         std::cout << "DB: modified " << rows_modified << " rows" << std::endl;
     }
