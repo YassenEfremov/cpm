@@ -4,7 +4,6 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/pattern_formatter.h"
 
-#include <iostream>
 #include <exception>
 #include <memory>
 
@@ -22,7 +21,8 @@ int main(int argc, char *argv[]) {
     stderr_logger->set_pattern("%^%l%$: %v");
 
     try {
-        cpm::parse_args(argc, argv);
+        auto args = cpm::parse_args(argc, argv);
+        cpm::commands[argv[1]]->run(args);
 
     } catch (const std::exception &e) {
         if (argc < 2) {

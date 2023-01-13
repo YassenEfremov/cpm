@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 0.6.1)
+project(cpm VERSION 0.7.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -8,10 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 configure_file(cmake/version.hpp.in ${PROJECT_BINARY_DIR}/version.hpp)
 
 add_executable(cpm
-	src/main.cpp
 	src/cli/parser.cpp
+	src/commands/command.cpp
 	src/commands/install.cpp
 	src/commands/remove.cpp
+	src/commands/list.cpp
+	src/main.cpp
+	src/package.cpp
 )
 
 add_subdirectory(lib/argparse)

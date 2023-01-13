@@ -1,17 +1,28 @@
 #ifndef REMOVE_H
 #define REMOVE_H
 
+#include "command.hpp"
+#include "../package.hpp"
+
 #include <string>
+#include <vector>
 
 
 namespace cpm {
 
 	/**
-	 * @brief Remove the given package/s
+	 * @brief A class representing the cpm remove command
 	 * 
-	 * @param package name of the package to remove
+	 * This command removes the given package
 	 */
-	void remove(const std::string &package);
+	class RemoveCommand : public Command {
+
+		public:
+
+		RemoveCommand(const std::string &name);
+
+		void run(const std::vector<Package> &args) override;
+	};
 }
 
 
