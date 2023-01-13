@@ -1,13 +1,17 @@
 #include "list.hpp"
 
 #include "command.hpp"
+#include "../db/db.hpp"
 #include "../package.hpp"
+#include "../util.hpp"
 
 #include "spdlog/spdlog.h"
-#include "sqlite3.h"
 
+#include <filesystem>
 #include <string>
 #include <vector>
+
+namespace fs = std::filesystem;
 
 
 namespace cpm {
@@ -17,18 +21,11 @@ namespace cpm {
     void ListCommand::run(const std::vector<Package> &args) {
 
         // List all of the installed packages from the local DB
-        sqlite3 *db;
-        char *err_msg;
-        sqlite3_open("lib/packages.db3", &db);
+        PackageDB db(fs::current_path() / util::packages_dir / util::packages_db);
+        auto packages = db.list();
 
-        sqlite3_exec(db, "SELECT name FROM installed_packages;",
-            [](void *data, int cols, char **col_vals, char **col_names) {
-                spdlog::get("stdout_logger")->info(std::string(col_vals[0]) + "\n");
-                return 0;
-            }, 0, &err_msg
-        );
-
-        sqlite3_free(err_msg);
-        sqlite3_close(db);
+        for (auto package : packages) {
+            spdlog::info(package.get_name() + "\n");
+        }
 	}
 }

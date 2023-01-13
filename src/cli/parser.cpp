@@ -32,8 +32,6 @@ namespace cpm {
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
 
-        commands.insert({"install", &install_command});
-
         // Remove command
         static RemoveCommand remove_command("remove");
         remove_command.add_description("Remove the given package/s");
@@ -42,13 +40,9 @@ namespace cpm {
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
 
-        commands.insert({"remove", &remove_command});
-
         // List command
         static ListCommand list_command("list");
         list_command.add_description("List all installed packages");
-
-        commands.insert({"list", &list_command});
 
         // Update command
         // argparse::ArgumentParser update_command("update");
@@ -62,6 +56,9 @@ namespace cpm {
         parser.add_subparser(remove_command);
         parser.add_subparser(list_command);
         // parser.add_subparser(update_command);
+        commands.insert({"install", &install_command});
+        commands.insert({"remove", &remove_command});
+        commands.insert({"list", &list_command});
 
         if (argc < 2) {
             throw std::runtime_error(parser.help().str());
