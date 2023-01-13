@@ -16,6 +16,7 @@ int main(int argc, char *argv[]) {
     stdout_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
         "%v", spdlog::pattern_time_type::local, ""
     ));
+    spdlog::set_default_logger(stdout_logger);
 
     auto stderr_logger = spdlog::stderr_color_mt("stderr_logger");
     stderr_logger->set_pattern("%^%l%$: %v");
