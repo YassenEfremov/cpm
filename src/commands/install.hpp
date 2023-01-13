@@ -1,17 +1,28 @@
 #ifndef INSTALL_H
 #define INSTALL_H
 
+#include "command.hpp"
+#include "../package.hpp"
+
 #include <string>
+#include <vector>
 
 
 namespace cpm {
 
 	/**
-	 * @brief Install the given package/s
+	 * @brief A class representing the cpm install command
 	 * 
-	 * @param package URL to a GitHub repository
+	 * This command downloads the given GitHub repository
 	 */
-	void install(const std::string &package);
+	class InstallCommand : public Command {
+
+		public:
+
+		InstallCommand(const std::string &name);
+
+		void run(const std::vector<Package> &args) override;
+	};
 }
 
 
