@@ -29,7 +29,7 @@ namespace cpm {
 		 * 
 		 * @param args list of packages
 		 */
-		virtual void run(const std::vector<Package> &args) = 0;
+		virtual void run(const std::vector<Package> &packages) = 0;
 	};
 }
 

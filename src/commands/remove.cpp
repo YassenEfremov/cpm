@@ -21,30 +21,26 @@ namespace cpm {
 
     RemoveCommand::RemoveCommand(const std::string &name) : Command(name) {}
 
-    void RemoveCommand::run(const std::vector<Package> &args) {
+    void RemoveCommand::run(const std::vector<Package> &packages) {
 
-        for (auto package : args) {
-
-            fs::path package_dir = fs::path(package.get_name()).stem();
-
-            spdlog::info(
-                "Removing package from {} ...\n",
-                (fs::current_path() / util::packages_dir / package_dir / "").string()
-            );
+        for (auto package : packages) {
 
             // Check if the target directory exists
-            if (!fs::exists(fs::current_path() / util::packages_dir / package_dir / "")) {            // TODO: check the local package DB instead
+            if (!fs::exists(fs::current_path() / util::packages_dir / package.get_name() / "")) {            // TODO: check the local package DB instead
                 throw std::invalid_argument("Package not installed!");
             }
 
-            std::uintmax_t n = fs::remove_all(fs::current_path() / util::packages_dir / package_dir / "");
+            spdlog::info(
+                "Removing package from {} ...\n",
+                (fs::current_path() / util::packages_dir / package.get_name() / "").string()
+            );
+
+            std::uintmax_t n = fs::remove_all(fs::current_path() / util::packages_dir / package.get_name() / "");
             spdlog::info("Removed {} entries\n", n);
 
-            // Remove the package from the local DB
             PackageDB db(fs::current_path() / util::packages_dir / util::packages_db);
-            int rows_modified = db.remove(Package(package_dir.string()));
-
-            spdlog::info("DB: modified {} rows\n", rows_modified);
+            int rows_modified = db.remove(package);
+            spdlog::info("Package DB: modified {} rows\n", rows_modified);
         }
     }
 }

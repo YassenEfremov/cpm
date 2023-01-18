@@ -18,9 +18,8 @@ namespace cpm {
 
     ListCommand::ListCommand(const std::string &name) : Command(name) {}
 
-    void ListCommand::run(const std::vector<Package> &args) {
+    void ListCommand::run(const std::vector<Package> &) {
 
-        // List all of the installed packages from the local DB
         PackageDB db(fs::current_path() / util::packages_dir / util::packages_db);
         auto packages = db.list();
 

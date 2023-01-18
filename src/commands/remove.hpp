@@ -21,7 +21,7 @@ namespace cpm {
 
 		RemoveCommand(const std::string &name);
 
-		void run(const std::vector<Package> &args) override;
+		void run(const std::vector<Package> &packages) override;
 	};
 }
 
