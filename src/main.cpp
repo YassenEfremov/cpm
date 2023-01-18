@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     } catch (const std::exception &e) {
         if (argc < 2) {
-            // Print usage
+            // Used to print usage (without error)
             spdlog::get("stdout_logger")->error(e.what());
 
         } else {

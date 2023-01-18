@@ -6,9 +6,14 @@
 
 #include "cpr/cpr.h"
 
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
+
+#include <cstdint>
+
+namespace fs = std::filesystem;
 
 
 namespace cpm {
@@ -25,10 +30,19 @@ namespace cpm {
 		/**
 		 * @brief Download the given package repository
 		 * 
-		 * @param name the name of the package
+		 * @param url URL of a GitHub repository
 		 * @param progress a function to show the download progress
+		 * 
+		 * @return A response object
 		 */
-		cpr::Response download(const std::string &repo_url, void(*progress)());
+		cpr::Response download(
+			const fs::path &url,
+			std::function<bool(
+				cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
+				cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
+				std::intptr_t userdata
+			)> progress
+		);
 
 		/**
 		 * @brief Extract the given package raw zip data
@@ -44,7 +58,7 @@ namespace cpm {
 
 		InstallCommand(const std::string &name);
 
-		void run(const std::vector<Package> &args) override;
+		void run(const std::vector<Package> &packages) override;
 	};
 }
 
