@@ -1,6 +1,9 @@
 name: CMake
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - doc
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
