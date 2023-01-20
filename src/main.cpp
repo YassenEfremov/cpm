@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
     auto stderr_logger = spdlog::stderr_color_mt("stderr_logger");
     stderr_logger->set_pattern("%^%l%$: %v");
 
+
     try {
         auto args = cpm::parse_args(argc, argv);
         cpm::commands[argv[1]]->run(args);

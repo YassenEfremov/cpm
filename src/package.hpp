@@ -23,11 +23,17 @@ namespace cpm {
 		Package(const fs::path &url);
 
 		/**
+		 * @brief Getter for URL
+		 * 
+		 * @return The URL of the package
+		*/
+		const fs::path &get_url() const;
+
+		/**
 		 * @brief Getter for name
 		 * 
 		 * @return The name of the package
 		*/
-		const fs::path &get_url() const;
 		const std::string &get_name() const;
 	};
 }

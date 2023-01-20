@@ -21,14 +21,14 @@ namespace cpm {
 	/**
 	 * @brief A class representing the cpm install command
 	 * 
-	 * This command downloads the given GitHub repository
+	 * This command downloads the specified GitHub repository
 	 */
 	class InstallCommand : public Command {
 
 		private:
 
 		/**
-		 * @brief Download the given package repository
+		 * @brief Download the specified package repository
 		 * 
 		 * @param url URL of a GitHub repository
 		 * @param progress a function to show the download progress
@@ -45,7 +45,7 @@ namespace cpm {
 		);
 
 		/**
-		 * @brief Extract the given package raw zip data
+		 * @brief Extract the specified package raw zip data
 		 * 
 		 * @param stream the package raw zip data
 		 * @param on_extract a function to show the extraction progress
@@ -58,6 +58,11 @@ namespace cpm {
 
 		InstallCommand(const std::string &name);
 
+		/**
+		 * @brief Install the specified packages
+		 * 
+		 * @param packages list of packages to install
+		 */
 		void run(const std::vector<Package> &packages) override;
 	};
 }

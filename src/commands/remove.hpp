@@ -13,7 +13,7 @@ namespace cpm {
 	/**
 	 * @brief A class representing the cpm remove command
 	 * 
-	 * This command removes the given package
+	 * This command removes the specified package
 	 */
 	class RemoveCommand : public Command {
 
@@ -21,6 +21,11 @@ namespace cpm {
 
 		RemoveCommand(const std::string &name);
 
+		/**
+		 * @brief Remove the specified packages
+		 * 
+		 * @param packages list of packages to remove
+		 */
 		void run(const std::vector<Package> &packages) override;
 	};
 }

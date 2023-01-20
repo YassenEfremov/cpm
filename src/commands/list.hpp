@@ -21,6 +21,9 @@ namespace cpm {
 
 		ListCommand(const std::string &name);
 
+		/**
+		 * @brief List all of the installed packages
+		 */
 		void run(const std::vector<Package> &) override;
 	};
 }

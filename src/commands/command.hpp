@@ -19,10 +19,7 @@ namespace cpm {
 		public:
 
 		Command(const std::string &name);
-		virtual ~Command();
-		
-
-		public:
+		virtual ~Command() = default;
 
 		/**
 		 * @brief Run the command
