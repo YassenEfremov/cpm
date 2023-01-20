@@ -1,11 +1,13 @@
 #include "install.hpp"
 
 #include "command.hpp"
-#include "../db/db.hpp"
+#include "../db/package_db.hpp"
 #include "../package.hpp"
+#include "../script/cpm_pack.hpp"
 #include "../util.hpp"
 
 #include "cpr/cpr.h"
+#include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
 extern "C" {
@@ -13,7 +15,9 @@ extern "C" {
 }
 
 #include <filesystem>
+#include <fstream>
 #include <functional>
+#include <iomanip>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -53,7 +57,7 @@ namespace cpm {
 
 	void InstallCommand::run(const std::vector<Package> &packages) {
 
-        for (auto package : packages) {
+        for (const auto &package : packages) {
 
             if (fs::exists(fs::current_path() / util::packages_dir / package.get_name() / "")) {             // TODO: check the local package DB instead
                 throw std::invalid_argument("Package directory already exists!");
@@ -101,9 +105,13 @@ namespace cpm {
             fs::rename(fs::current_path() / util::packages_dir / package.get_name() += "-master/",           // TODO: the in-memory archive name should be changed instead
                        fs::current_path() / util::packages_dir / package.get_name() / "");
 
-            PackageDB db(fs::current_path() / util::packages_dir / util::packages_db);
-            int rows_modified = db.add(package);
-            spdlog::info("Package DB: modified {} rows\n", rows_modified);
+            CPMPack cpm_pack(fs::current_path() / util::package_config);
+            int lines_modified = cpm_pack.add(package);
+            spdlog::info("cpm_pack.json: modified {} line/s\n", lines_modified);
+
+            // PackageDB db(fs::current_path() / util::packages_dir / util::packages_db);
+            // int rows_modified = db.add(package);
+            // spdlog::info("Package DB: modified {} rows\n", rows_modified);
         }
     }
 }

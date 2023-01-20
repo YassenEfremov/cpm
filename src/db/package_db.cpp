@@ -1,8 +1,9 @@
-#include "db.hpp"
-
-#include "sqlite3.h"
+#include "package_db.hpp"
 
 #include "../package.hpp"
+#include "../repository.hpp"
+
+#include "sqlite3.h"
 
 #include <filesystem>
 #include <stdexcept>
@@ -14,15 +15,15 @@ namespace fs = std::filesystem;
 
 namespace cpm {
 	
-	PackageDB::PackageDB(const fs::path &filename) {
+	PackageDB::PackageDB(const fs::path &filename) : Repository(filename) {
 		int err = sqlite3_open(filename.string().c_str(), &this->db);
 		if (err) {
-			sqlite3_close(db);
+			sqlite3_close(this->db);
 			throw std::runtime_error("Can't open package DB!");
 		}
 
 		char *err_msg;
-		err = sqlite3_exec(db,
+		err = sqlite3_exec(this->db,
 			"CREATE TABLE IF NOT EXISTS installed_packages("
 				"name VARCHAR(100) NOT NULL PRIMARY KEY"
 			");"

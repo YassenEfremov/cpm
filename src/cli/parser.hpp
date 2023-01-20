@@ -19,7 +19,10 @@ namespace cpm {
 	/**
 	 * @brief Parse command line arguments
 	 * 
-	 * @return A list containing the values given to the current command
+	 * @param argc the number of arguments (equivelent to main's argc)
+	 * @param argv a list of the arguments (equivelent to main's argv)
+	 * 
+	 * @return A list containing the arguments specified in the current command
 	 */
 	const std::vector<Package> parse_args(int argc, char *argv[]);
 }

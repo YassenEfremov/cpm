@@ -25,14 +25,14 @@ namespace cpm {
         argparse::ArgumentParser parser("cpm", CPM_VERSION);
 
         static InstallCommand install_command("install");
-        install_command.add_description("Install the given package/s");
+        install_command.add_description("Install the specified package/s");
         install_command.add_argument("packages")
             .help("URL of a GitHub repository")
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
 
         static RemoveCommand remove_command("remove");
-        remove_command.add_description("Remove the given package/s");
+        remove_command.add_description("Remove the specified package/s");
         remove_command.add_argument("packages")
             .help("Packages to remove")
             .required()
@@ -42,7 +42,7 @@ namespace cpm {
         list_command.add_description("List all installed packages");
 
         // argparse::ArgumentParser update_command("update");
-        // update_command.add_description("Update the given package/s");
+        // update_command.add_description("Update the specified package/s");
         // update_command.add_argument("packages")
         //     .help("Packages to update")
         //     .required()

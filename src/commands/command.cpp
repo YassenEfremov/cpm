@@ -8,5 +8,4 @@
 namespace cpm {
 
     Command::Command(const std::string &name) : ArgumentParser(name) {}
-    Command::~Command() {}
 }
