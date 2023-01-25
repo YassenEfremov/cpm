@@ -18,11 +18,12 @@
 
 namespace cpm {
 
-    std::map<std::string, Command*> commands;
+    std::map<std::string, Command *> commands;
 
-	const std::vector<Package> parse_args(int argc, char *argv[]) {
+	void parse_args(int argc, char *argv[]) {
 
         argparse::ArgumentParser parser("cpm", CPM_VERSION);
+
 
         static InstallCommand install_command("install");
         install_command.add_description("Install the specified package/s");
@@ -30,6 +31,11 @@ namespace cpm {
             .help("URL of a GitHub repository")
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
+        install_command.add_argument("-g", "--global")
+            .help("installs package/s globally")
+            .default_value(false)
+            .implicit_value(true);
+
 
         static RemoveCommand remove_command("remove");
         remove_command.add_description("Remove the specified package/s");
@@ -37,9 +43,19 @@ namespace cpm {
             .help("Packages to remove")
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
+        remove_command.add_argument("-g", "--global")
+            .help("removes package/s globally")
+            .default_value(false)
+            .implicit_value(true);
+
 
         static ListCommand list_command("list");
         list_command.add_description("List all installed packages");
+        list_command.add_argument("-g", "--global")
+            .help("lists globally installed package/s")
+            .default_value(false)
+            .implicit_value(true);
+
 
         // argparse::ArgumentParser update_command("update");
         // update_command.add_description("Update the specified package/s");
@@ -55,18 +71,11 @@ namespace cpm {
         commands.insert({"install", &install_command});
         commands.insert({"remove", &remove_command});
         commands.insert({"list", &list_command});
+        // commands.insert({"update", &update_command});
 
         if (argc < 2) {
             throw std::runtime_error(parser.help().str());
         }
         parser.parse_args(argc, argv);
-
-        try {
-            auto package_names = commands[argv[1]]->get<std::vector<std::string>>("packages");
-            return std::vector<Package>(package_names.begin(), package_names.end());
-
-        } catch (std::exception &e) {
-            return std::vector<Package>();
-        }
     }
 }

@@ -15,9 +15,7 @@ extern "C" {
 }
 
 #include <filesystem>
-#include <fstream>
 #include <functional>
-#include <iomanip>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -37,38 +35,59 @@ namespace cpm {
             std::intptr_t userdata
         )> progress
     ) {
-        // Download the repository as a zip archive (same as the green button on GitHub)
+        // Download the repository as a zip archive (same as the green button on GitHub)    // TODO: this should use the github API
         return cpr::Get(cpr::Url{(url / "archive/refs/heads/master.zip").string()},
-                        cpr::ProgressCallback(progress));                           // TODO: this should use the github API
+                        cpr::ProgressCallback(progress));
 	}
 
-	void InstallCommand::extract(const std::string &stream,
-                                 int(*on_extract)(const char *filename, void *archive)) {
+	void InstallCommand::extract(const std::string &stream, const fs::path &output_dir,
+                                 bool(*on_extract)(int currentEntry, int totalEntries)) {
         struct zip_t *zip = zip_stream_open(stream.c_str(), stream.size(), 0, 'r');
 
-        zip_stream_extract(stream.c_str(), stream.size(),
-            (fs::current_path() / util::packages_dir / "").string().c_str(),
-            on_extract, zip
-        );
+        std::size_t n = zip_entries_total(zip);
+        for (int i = 0; i < n; i++) {
+            zip_entry_openbyindex(zip, i);
+
+            std::string entry_name = zip_entry_name(zip);
+            std::size_t first_slash = entry_name.find_first_of('/');
+            if (zip_entry_isdir(zip)) {
+                fs::create_directories(output_dir / entry_name.substr(first_slash + 1));
+            }
+            zip_entry_fread(zip, (output_dir / entry_name.substr(first_slash + 1)).string().c_str());
+            on_extract(i, n);
+
+            zip_entry_close(zip);
+        }
+
         zip_stream_close(zip);
 	}
 
 	InstallCommand::InstallCommand(const std::string &name) : Command(name) {}
 
-	void InstallCommand::run(const std::vector<Package> &packages) {
+	void InstallCommand::run() {
+
+        auto package_names = this->get<std::vector<std::string>>("packages");
+        auto packages = std::vector<Package>(package_names.begin(), package_names.end());
+
+        fs::path cwd;
+        if (this->is_used("--global")) {
+            cwd = util::global_dir;
+        } else {
+            cwd = fs::current_path();
+        }
 
         for (const auto &package : packages) {
 
-            if (fs::exists(fs::current_path() / util::packages_dir / package.get_name() / "")) {             // TODO: check the local package DB instead
+            if (fs::exists(cwd / util::packages_dir / package.get_name() / "")) {             // TODO: check the local package DB instead
                 throw std::invalid_argument("Package directory already exists!");
             }
 
             spdlog::info(
                 "Installing package into {} ...\n",
-                (fs::current_path() / util::packages_dir / package.get_name() / "").string()
+                (cwd / util::packages_dir / package.get_name() / "").string()
             );
 
-            cpr::Response response = download(package.get_url(),
+            cpr::Response response = this->download(package.get_url(),
                 [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
                    cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
                     double downloaded = static_cast<double>(downloadNow);
@@ -79,6 +98,7 @@ namespace cpm {
                         total /= 1000000;
                         unit = "MB";
                         spdlog::info("\r                                                        ");
+
                     } else if (downloadNow >= 1000) {
                         downloaded /= 1000;
                         total /= 1000;
@@ -91,27 +111,24 @@ namespace cpm {
             );
             spdlog::info(" done.\n");
 
-            extract(response.text,
-                [](const char *filename, void *archive) {
-                    struct zip_t *zip = static_cast<struct zip_t *>(archive);
-                    static int n = 1;
-                    spdlog::info("\rExtracting archive entries {}/{}", n++, zip_entries_total(zip));
-                    return EXIT_SUCCESS;
+            this->extract(response.text, cwd / util::packages_dir / package.get_name(),
+                [](int currentEntry, int totalEntries) {
+                    spdlog::info("\rExtracting archive entries {}/{}", currentEntry, totalEntries);
+                    return true;
                 }
             );
             spdlog::info(" done.\n");
 
-            // Rename the target directory to remove the "-master" at the end
-            fs::rename(fs::current_path() / util::packages_dir / package.get_name() += "-master/",           // TODO: the in-memory archive name should be changed instead
-                       fs::current_path() / util::packages_dir / package.get_name() / "");
+            if (this->is_used("--global")) {
+                PackageDB db(cwd / util::package_db);
+                int rows_modified = db.add(package);
+                spdlog::info("Package DB: modified {} row/s\n", rows_modified);
 
-            CPMPack cpm_pack(fs::current_path() / util::package_config);
-            int lines_modified = cpm_pack.add(package);
-            spdlog::info("cpm_pack.json: modified {} line/s\n", lines_modified);
-
-            // PackageDB db(fs::current_path() / util::packages_dir / util::packages_db);
-            // int rows_modified = db.add(package);
-            // spdlog::info("Package DB: modified {} rows\n", rows_modified);
+            } else {
+                CPMPack cpm_pack(cwd / util::package_config);
+                int lines_modified = cpm_pack.add(package);
+                spdlog::info("cpm_pack.json: modified {} line/s\n", lines_modified);
+            }
         }
     }
 }

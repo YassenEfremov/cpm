@@ -2,14 +2,12 @@
 #define INSTALL_H
 
 #include "command.hpp"
-#include "../package.hpp"
 
 #include "cpr/cpr.h"
 
 #include <filesystem>
 #include <functional>
 #include <string>
-#include <vector>
 
 #include <cstdint>
 
@@ -48,10 +46,11 @@ namespace cpm {
 		 * @brief Extract the specified package raw zip data
 		 * 
 		 * @param stream the package raw zip data
+		 * @param output_dir the output directory (including the package name!)
 		 * @param on_extract a function to show the extraction progress
 		 */
-		void extract(const std::string &stream,
-					 int(*on_extract)(const char *filename, void *archive));
+		void extract(const std::string &stream, const fs::path &output_dir,
+					 bool(*on_extract)(int currentEntry, int totalEntries));
 
 
 		public:
@@ -60,10 +59,8 @@ namespace cpm {
 
 		/**
 		 * @brief Install the specified packages
-		 * 
-		 * @param packages list of packages to install
 		 */
-		void run(const std::vector<Package> &packages) override;
+		void run() override;
 	};
 }
 

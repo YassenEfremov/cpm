@@ -2,10 +2,8 @@
 #define REMOVE_H
 
 #include "command.hpp"
-#include "../package.hpp"
 
 #include <string>
-#include <vector>
 
 
 namespace cpm {
@@ -23,10 +21,8 @@ namespace cpm {
 
 		/**
 		 * @brief Remove the specified packages
-		 * 
-		 * @param packages list of packages to remove
 		 */
-		void run(const std::vector<Package> &packages) override;
+		void run() override;
 	};
 }
 

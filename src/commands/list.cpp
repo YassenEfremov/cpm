@@ -10,7 +10,6 @@
 #include "spdlog/spdlog.h"
 
 #include <filesystem>
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -21,20 +20,46 @@ namespace cpm {
 
     ListCommand::ListCommand(const std::string &name) : Command(name) {}
 
-    void ListCommand::run(const std::vector<Package> &) {
+    void ListCommand::run() {
 
-        CPMPack cpm_pack(fs::current_path() / util::package_config);
-        auto packages = cpm_pack.list();
+        std::vector<cpm::Package> installed_packages;
 
-        for (auto p : packages) {
-            spdlog::info(p.get_name() + "\n");
+        fs::path cwd;
+        if (this->is_used("--global")) {
+            cwd = util::global_dir;
+
+        } else {
+            cwd = fs::current_path();
         }
 
-        // PackageDB db(fs::current_path() / util::packages_dir / util::packages_db);
-        // auto packages = db.list();
+        if (this->is_used("--global")) {
+            if (!fs::exists(cwd / util::package_db)) {
+                spdlog::info("No packages installed!\n");
+                return;
+            }
+            PackageDB db(cwd / util::package_db);
+            installed_packages = db.list();
+            if (installed_packages.empty()) {
+                spdlog::info("No packages installed!\n");
+                return;
+            }
 
-        // for (auto package : packages) {
-        //     spdlog::info(package.get_name() + "\n");
-        // }
+        } else {
+            if (!fs::exists(cwd / util::package_config)) {
+                spdlog::info("No packages installed!\n");
+                return;
+            }
+            CPMPack cpm_pack(cwd / util::package_config);
+            installed_packages = cpm_pack.list();
+            if (installed_packages.empty()) {
+                spdlog::info("No packages installed!\n");
+                return;
+            }
+        }
+
+        spdlog::info("Packages installed in {}:\n", (cwd / util::packages_dir / "").string());
+        for (auto p : installed_packages) {
+            spdlog::info("   {}\n", p.get_name());
+        }
 	}
 }
