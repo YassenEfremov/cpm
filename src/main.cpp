@@ -23,12 +23,12 @@ int main(int argc, char *argv[]) {
 
 
     try {
-        auto args = cpm::parse_args(argc, argv);
-        cpm::commands[argv[1]]->run(args);
+        cpm::parse_args(argc, argv);
+        cpm::commands[argv[1]]->run();
 
     } catch (const std::exception &e) {
         if (argc < 2) {
-            // Used to print usage (without error)
+            // Used to print usage (not formatted as an error)
             spdlog::get("stdout_logger")->error(e.what());
 
         } else {

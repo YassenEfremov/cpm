@@ -17,6 +17,7 @@ add_executable(cpm
 	src/script/cpm_pack.cpp
 	src/main.cpp
 	src/package.cpp
+	src/util.cpp
 )
 
 add_subdirectory(lib/argparse)

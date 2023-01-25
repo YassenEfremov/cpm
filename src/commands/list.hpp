@@ -2,10 +2,8 @@
 #define LIST_H
 
 #include "command.hpp"
-#include "../package.hpp"
 
 #include <string>
-#include <vector>
 
 
 namespace cpm {
@@ -24,7 +22,7 @@ namespace cpm {
 		/**
 		 * @brief List all of the installed packages
 		 */
-		void run(const std::vector<Package> &) override;
+		void run() override;
 	};
 }
 

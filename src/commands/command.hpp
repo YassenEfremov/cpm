@@ -1,12 +1,9 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-#include "../package.hpp"
-
 #include "argparse/argparse.hpp"
 
 #include <string>
-#include <vector>
 
 
 namespace cpm {
@@ -23,10 +20,8 @@ namespace cpm {
 
 		/**
 		 * @brief Run the command
-		 * 
-		 * @param args list of packages
 		 */
-		virtual void run(const std::vector<Package> &packages) = 0;
+		virtual void run() = 0;
 	};
 }
 
