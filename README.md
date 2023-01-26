@@ -8,7 +8,7 @@ Clone the repository and execute the following commands:
 
 ```sh
 cd cpm
-git submodule init
+git submodule update --init --progress
 mkdir build
 cd build
 cmake .. -G Ninja

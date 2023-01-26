@@ -16,25 +16,22 @@ namespace fs = std::filesystem;
 
 
 namespace cpm {
+
+	void CPMPack::save() {
+		std::ofstream cpm_pack_out(this->filename);
+		cpm_pack_out << std::setw(4) << this->cpm_pack_json;
+	}
 	
-	CPMPack::CPMPack(const fs::path &filename) : Repository(filename) {
-		if (!fs::exists(this->filename) || fs::is_empty(this->filename)) {
-			this->cpm_pack_json = {
-				{"dependencies", nlohmann::json::array()}
-			};
-		} else {
+	CPMPack::CPMPack(const fs::path &filename) : Repository(filename) {	
+		if (fs::exists(this->filename) && !fs::is_empty(this->filename)) {
 			std::ifstream cpm_pack_in(this->filename);
 			this->cpm_pack_json = nlohmann::ordered_json::parse(cpm_pack_in);
 		}
-
-		std::ofstream cpm_pack_out(this->filename);
-		cpm_pack_out << std::setw(4) << this->cpm_pack_json;
 	}
 
 	int CPMPack::add(const cpm::Package &package) {
 		this->cpm_pack_json["dependencies"] += package.get_name();
-		std::ofstream cpm_pack_out(this->filename);
-		cpm_pack_out << std::setw(4) << this->cpm_pack_json;
+		this->save();
 		return 1;
 	}
 
@@ -45,13 +42,24 @@ namespace cpm {
 				break;
 			}
 		}
-		std::ofstream cpm_pack_out(this->filename);
-		cpm_pack_out << std::setw(4) << this->cpm_pack_json;
+		this->save();
 		return 1;
 	}
 
 	std::vector<Package> CPMPack::list() {
 		auto packages = this->cpm_pack_json["dependencies"].get<std::vector<std::string>>();
 		return std::vector<Package>(packages.begin(), packages.end());
+	}
+
+	Package CPMPack::create() {
+		std::string default_package_name = fs::current_path().stem().string();
+        this->cpm_pack_json["name"] = default_package_name;
+        this->cpm_pack_json["version"] = "0.1.0";
+		this->cpm_pack_json["url"] = "";
+        this->cpm_pack_json["description"] = "";
+        this->cpm_pack_json["author"] = "";
+        this->cpm_pack_json["license"] = "";
+		this->save();
+		return Package(default_package_name);
 	}
 }

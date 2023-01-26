@@ -6,6 +6,7 @@
 #include "../commands/install.hpp"
 #include "../commands/remove.hpp"
 #include "../commands/list.hpp"
+#include "../commands/create.hpp"
 #include "../package.hpp"
 
 #include "argparse/argparse.hpp"
@@ -56,21 +57,26 @@ namespace cpm {
             .default_value(false)
             .implicit_value(true);
 
+        static CreateCommand create_command("create");
+        create_command.add_description("Create a new package");
+
 
         // argparse::ArgumentParser update_command("update");
         // update_command.add_description("Update the specified package/s");
         // update_command.add_argument("packages")
-        //     .help("Packages to update")
+        //     .help("updates the specified package/s")
         //     .required()
         //     .nargs(argparse::nargs_pattern::at_least_one);
 
         parser.add_subparser(install_command);
         parser.add_subparser(remove_command);
         parser.add_subparser(list_command);
+        parser.add_subparser(create_command);
         // parser.add_subparser(update_command);
         commands.insert({"install", &install_command});
         commands.insert({"remove", &remove_command});
         commands.insert({"list", &list_command});
+        commands.insert({"create", &create_command});
         // commands.insert({"update", &update_command});
 
         if (argc < 2) {
