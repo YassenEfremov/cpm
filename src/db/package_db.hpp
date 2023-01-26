@@ -21,7 +21,7 @@ namespace cpm {
 
 		private:
 
-		sqlite3 *db;
+		sqlite3 *package_db;
 
 
 		public:

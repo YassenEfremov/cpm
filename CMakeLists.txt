@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 0.9.0)
+project(cpm VERSION 0.10.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -13,6 +13,7 @@ add_executable(cpm
 	src/commands/install.cpp
 	src/commands/list.cpp
 	src/commands/remove.cpp
+	src/commands/create.cpp
 	src/db/package_db.cpp
 	src/script/cpm_pack.cpp
 	src/main.cpp

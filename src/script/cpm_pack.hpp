@@ -20,6 +20,12 @@ namespace cpm {
 
 		nlohmann::ordered_json cpm_pack_json;
 
+		/**
+		 * @brief Save the current cpm_pack_json to a file with the current
+		 * 		  filename
+		 */
+		void save();
+
 
 		public:
 
@@ -50,6 +56,14 @@ namespace cpm {
 		 * 		   file
 		 */
 		std::vector<Package> list() override;
+
+		/**
+		 * @brief Create a new package with the default field values in the
+		 * 		  current cpm_pack.json file
+		 * 
+		 * @return The created package
+		 */
+		Package create();
 	};
 }
 
