@@ -14,21 +14,18 @@ namespace fs = std::filesystem;
 
 namespace cpm {
 
+	/**
+	 * @brief A class representing the cpm_pack.json
+	 */
 	class CPMPack : public Repository<Package> {
-
-		private:
-
-		nlohmann::ordered_json cpm_pack_json;
-
-		/**
-		 * @brief Save the current cpm_pack_json to a file with the current
-		 * 		  filename
-		 */
-		void save();
-
 
 		public:
 
+		/**
+		 * @brief Constructor for cpm_pack.json
+		 * 
+		 * @param filename the name of the cpm_pack.json file
+		 */
 		CPMPack(const fs::path &filename);
 
 		/**
@@ -64,6 +61,17 @@ namespace cpm {
 		 * @return The created package
 		 */
 		Package create();
+
+
+		private:
+
+		nlohmann::ordered_json cpm_pack_json;
+
+		/**
+		 * @brief Save the current cpm_pack_json to a file with the current
+		 * 		  filename
+		 */
+		void save();
 	};
 }
 

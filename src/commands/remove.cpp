@@ -38,7 +38,7 @@ namespace cpm {
         for (const auto &package : packages) {
 
             // Check if the target directory exists
-            if (!fs::exists(cwd / util::packages_dir / package.get_name() / "")) {            // TODO: check the local package DB instead
+            if (!fs::exists(cwd / util::packages_dir / package.get_name() / "")) {            // TODO: check the local package database instead
                 throw std::invalid_argument("Package not installed!");
             }
 

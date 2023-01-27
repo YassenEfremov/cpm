@@ -17,6 +17,11 @@ namespace cpm {
 
 		public:
 
+		/**
+		 * @brief Constructor for create command
+		 * 
+		 * @param name the name of the command
+		 */
 		CreateCommand(const std::string &name);
 
 		/**

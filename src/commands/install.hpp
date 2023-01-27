@@ -2,6 +2,7 @@
 #define INSTALL_H
 
 #include "command.hpp"
+#include "../package.hpp"
 
 #include "cpr/cpr.h"
 
@@ -23,18 +24,33 @@ namespace cpm {
 	 */
 	class InstallCommand : public Command {
 
+		public:
+
+		/**
+		 * @brief Constructor for install command
+		 * 
+		 * @param name the name of the command
+		 */
+		InstallCommand(const std::string &name);
+
+		/**
+		 * @brief Install the specified packages
+		 */
+		void run() override;
+
+
 		private:
 
 		/**
 		 * @brief Download the specified package repository
 		 * 
-		 * @param url URL of a GitHub repository
+		 * @param package the package to download
 		 * @param progress a function to show the download progress
 		 * 
 		 * @return A response object
 		 */
 		cpr::Response download(
-			const fs::path &url,
+			const Package &package,
 			std::function<bool(
 				cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
 				cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
@@ -51,16 +67,6 @@ namespace cpm {
 		 */
 		void extract(const std::string &stream, const fs::path &output_dir,
 					 bool(*on_extract)(int currentEntry, int totalEntries));
-
-
-		public:
-
-		InstallCommand(const std::string &name);
-
-		/**
-		 * @brief Install the specified packages
-		 */
-		void run() override;
 	};
 }
 

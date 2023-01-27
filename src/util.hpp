@@ -2,6 +2,7 @@
 #define UTIL_H
 
 #include <filesystem>
+#include <string>	
 
 namespace fs = std::filesystem;
 
@@ -14,7 +15,8 @@ namespace cpm::util {
 	extern const fs::path packages_dir;
 
 	/**
-	 * @brief The SQLite DB file which stores the globally installed packages
+	 * @brief The SQLite database file which stores the globally installed
+	 * 		  packages
 	 */
 	extern const fs::path package_db;
 
@@ -27,6 +29,16 @@ namespace cpm::util {
 	 * @brief The directory in which cpm operates
 	 */
 	extern const fs::path global_dir;
+
+	/**
+	 * @brief The API url which cpm should use to download packages
+	 */
+	extern const fs::path api_url;
+
+	/**
+	 * @brief The name of the repository where cpm should search for packages
+	 */
+	extern const std::string repo_name;
 }
 
 

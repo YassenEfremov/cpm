@@ -7,5 +7,6 @@
 
 namespace cpm {
 
-    Command::Command(const std::string &name) : ArgumentParser(name) {}
+    Command::Command(const std::string &name)
+        : ArgumentParser(name, "", argparse::default_arguments::help) {}
 }

@@ -17,6 +17,11 @@ namespace cpm {
 
 		public:
 
+		/**
+		 * @brief Constructor for list command
+		 * 
+		 * @param name the name of the command
+		 */
 		ListCommand(const std::string &name);
 
 		/**
