@@ -17,6 +17,11 @@ namespace cpm {
 
 		public:
 
+		/**
+		 * @brief Constructor for remove command
+		 * 
+		 * @param name the name of the command
+		 */
 		RemoveCommand(const std::string &name);
 
 		/**

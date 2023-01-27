@@ -15,6 +15,11 @@ namespace cpm {
 
 		public:
 
+		/**
+		 * @brief Constructor for command
+		 * 
+		 * @param name the name of the command
+		 */
 		Command(const std::string &name);
 		virtual ~Command() = default;
 

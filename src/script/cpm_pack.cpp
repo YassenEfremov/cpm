@@ -16,11 +16,6 @@ namespace fs = std::filesystem;
 
 
 namespace cpm {
-
-	void CPMPack::save() {
-		std::ofstream cpm_pack_out(this->filename);
-		cpm_pack_out << std::setw(4) << this->cpm_pack_json;
-	}
 	
 	CPMPack::CPMPack(const fs::path &filename) : Repository(filename) {	
 		if (fs::exists(this->filename) && !fs::is_empty(this->filename)) {
@@ -61,5 +56,10 @@ namespace cpm {
         this->cpm_pack_json["license"] = "";
 		this->save();
 		return Package(default_package_name);
+	}
+
+	void CPMPack::save() {
+		std::ofstream cpm_pack_out(this->filename);
+		cpm_pack_out << std::setw(4) << this->cpm_pack_json;
 	}
 }

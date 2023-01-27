@@ -11,17 +11,19 @@ namespace cpm {
 
 	/**
 	 * @brief A class representing an object repository
+	 * 
+	 * @tparam T the type of objects to store
 	 */
 	template<typename T>
 	class Repository {
 
-		protected:
-
-		fs::path filename;
-
-
 		public:
 
+		/**
+		 * @brief Constructor for repository
+		 * 
+		 * @param filename the name of the file to store the repository
+		 */
 		Repository(const fs::path &filename) : filename(filename) {}
 		virtual ~Repository() = default;
 
@@ -49,6 +51,11 @@ namespace cpm {
 		 * @return A list of all the objects in the repository
 		 */
 		virtual std::vector<T> list() = 0;
+
+
+		protected:
+
+		fs::path filename;
 	};
 }
 

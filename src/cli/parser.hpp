@@ -2,11 +2,9 @@
 #define PARSER_H
 
 #include "../commands/command.hpp"
-#include "../package.hpp"
 
 #include <map>
 #include <string>
-#include <vector>
 
 
 namespace cpm {

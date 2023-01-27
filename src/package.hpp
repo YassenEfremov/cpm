@@ -1,10 +1,7 @@
 #ifndef PACKAGE_H
 #define PACKAGE_H
 
-#include <filesystem>
 #include <string>
-
-namespace fs = std::filesystem;
 
 
 namespace cpm {
@@ -14,20 +11,14 @@ namespace cpm {
 	 */
 	class Package {
 
-		fs::path url;
-		std::string name;
-
-
 		public:
 
-		Package(const fs::path &url);
-
 		/**
-		 * @brief Getter for URL
+		 * @brief Constructor for cpm package
 		 * 
-		 * @return The URL of the package
-		*/
-		const fs::path &get_url() const;
+		 * @param name the package name
+		 */
+		Package(const std::string &name);
 
 		/**
 		 * @brief Getter for name
@@ -35,6 +26,11 @@ namespace cpm {
 		 * @return The name of the package
 		*/
 		const std::string &get_name() const;
+
+
+		private:
+
+		std::string name;
 	};
 }
 

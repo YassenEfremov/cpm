@@ -7,14 +7,11 @@
 #include "../commands/remove.hpp"
 #include "../commands/list.hpp"
 #include "../commands/create.hpp"
-#include "../package.hpp"
 
 #include "argparse/argparse.hpp"
 
-#include <exception>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 
 namespace cpm {
@@ -29,7 +26,7 @@ namespace cpm {
         static InstallCommand install_command("install");
         install_command.add_description("Install the specified package/s");
         install_command.add_argument("packages")
-            .help("URL of a GitHub repository")
+            .help("Packages to install")
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
         install_command.add_argument("-g", "--global")

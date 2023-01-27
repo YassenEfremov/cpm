@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include <filesystem>
+#include <string>
 
 namespace fs = std::filesystem;
 
@@ -20,4 +21,8 @@ namespace cpm::util {
 #elif defined(__unix__)
 	const fs::path global_dir = std::getenv("HOME") / fs::path(".local/share/cpm");
 #endif
+
+	const fs::path api_url = "https://api.github.com/repos";
+
+	const std::string repo_name = "cpm-examples";
 }

@@ -15,44 +15,49 @@ namespace fs = std::filesystem;
 namespace cpm {
 
 	/**
-	 * @brief A class representing the local package DB
+	 * @brief A class representing the local package database
 	 */
 	class PackageDB : public Repository<Package> {
 
-		private:
-
-		sqlite3 *package_db;
-
-
 		public:
 
+		/**
+		 * @brief Constructor for package database
+		 * 
+		 * @param filename the name of the database file
+		 */
 		PackageDB(const fs::path &filename);
 		~PackageDB() override;
 
 		/**
-		 * @brief Add the specified package/s to the package DB
+		 * @brief Add the specified package/s to the package database
 		 * 
 		 * @param package the package to add
 		 * 
-		 * @return The number of rows modified in the DB
+		 * @return The number of rows modified in the database
 		 */
 		int add(const Package &package) override;
 
 		/**
-		 * @brief Remove the specified package/s from the package DB
+		 * @brief Remove the specified package/s from the package database
 		 * 
 		 * @param package the package to remove
 		 * 
-		 * @return The number of rows modified in the DB
+		 * @return The number of rows modified in the database
 		 */
 		int remove(const Package &package) override;
 
 		/**
-		 * @brief List all of the installed packages in the package DB
+		 * @brief List all of the installed packages in the package database
 		 * 
-		 * @return A list of all the installed packages in the DB
+		 * @return A list of all the installed packages in the database
 		 */
 		std::vector<Package> list() override;
+
+
+		private:
+
+		sqlite3 *package_db;
 	};
 }
 

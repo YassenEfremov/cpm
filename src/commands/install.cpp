@@ -27,41 +27,6 @@ namespace fs = std::filesystem;
 
 namespace cpm {
 
-	cpr::Response InstallCommand::download(
-        const fs::path &url,
-        std::function<bool(
-            cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
-            cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
-            std::intptr_t userdata
-        )> progress
-    ) {
-        // Download the repository as a zip archive (same as the green button on GitHub)    // TODO: this should use the github API
-        return cpr::Get(cpr::Url{(url / "archive/refs/heads/master.zip").string()},
-                        cpr::ProgressCallback(progress));
-	}
-
-	void InstallCommand::extract(const std::string &stream, const fs::path &output_dir,
-                                 bool(*on_extract)(int currentEntry, int totalEntries)) {
-        struct zip_t *zip = zip_stream_open(stream.c_str(), stream.size(), 0, 'r');
-
-        std::size_t n = zip_entries_total(zip);
-        for (int i = 0; i < n; i++) {
-            zip_entry_openbyindex(zip, i);
-
-            std::string entry_name = zip_entry_name(zip);
-            std::size_t first_slash = entry_name.find_first_of('/');
-            if (zip_entry_isdir(zip)) {
-                fs::create_directories(output_dir / entry_name.substr(first_slash + 1));
-            }
-            zip_entry_fread(zip, (output_dir / entry_name.substr(first_slash + 1)).string().c_str());
-            on_extract(i, n);
-
-            zip_entry_close(zip);
-        }
-
-        zip_stream_close(zip);
-	}
-
 	InstallCommand::InstallCommand(const std::string &name) : Command(name) {}
 
 	void InstallCommand::run() {
@@ -78,7 +43,7 @@ namespace cpm {
 
         for (const auto &package : packages) {
 
-            if (fs::exists(cwd / util::packages_dir / package.get_name() / "")) {             // TODO: check the local package DB instead
+            if (fs::exists(cwd / util::packages_dir / package.get_name() / "")) {             // TODO: check the local package database instead
                 throw std::invalid_argument("Package directory already exists!");
             }
 
@@ -87,7 +52,7 @@ namespace cpm {
                 (cwd / util::packages_dir / package.get_name() / "").string()
             );
 
-            cpr::Response response = this->download(package.get_url(),
+            cpr::Response response = this->download(package,
                 [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
                    cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
                     double downloaded = static_cast<double>(downloadNow);
@@ -104,6 +69,9 @@ namespace cpm {
                         total /= 1000;
                         unit = "KB";
                         spdlog::info("\r                                                        ");
+                    }
+                    if (total < downloaded) {
+                        total = downloaded;
                     }
                     spdlog::info("\rDownloading repository {0:.2f}/{1:.2f} {2}", downloaded, total, unit);
                     return true;
@@ -131,4 +99,50 @@ namespace cpm {
             }
         }
     }
+
+	cpr::Response InstallCommand::download(
+        const Package &package,
+        std::function<bool(
+            cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
+            cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
+            std::intptr_t userdata
+        )> progress
+    ) {
+        cpr::Response res = cpr::Head(
+            cpr::Url{(util::api_url / util::repo_name / package.get_name() / "zipball").string()}
+        );
+
+        if (res.status_code != cpr::status::HTTP_OK) {
+            throw std::invalid_argument("Package not found!");
+        }
+
+        res = cpr::Get(
+            cpr::Url{(util::api_url / util::repo_name / package.get_name() / "zipball").string()},
+            cpr::ProgressCallback(progress)
+        );
+
+        return res;
+	}
+
+	void InstallCommand::extract(const std::string &stream, const fs::path &output_dir,
+                                 bool(*on_extract)(int currentEntry, int totalEntries)) {
+        struct zip_t *zip = zip_stream_open(stream.c_str(), stream.size(), 0, 'r');
+
+        std::size_t n = zip_entries_total(zip);
+        for (int i = 0; i < n; i++) {
+            zip_entry_openbyindex(zip, i);
+
+            std::string entry_name = zip_entry_name(zip);
+            std::size_t first_slash = entry_name.find_first_of('/');
+            if (zip_entry_isdir(zip)) {
+                fs::create_directories(output_dir / entry_name.substr(first_slash + 1));
+            }
+            zip_entry_fread(zip, (output_dir / entry_name.substr(first_slash + 1)).string().c_str());
+            on_extract(i + 1, n);
+
+            zip_entry_close(zip);
+        }
+
+        zip_stream_close(zip);
+	}
 }

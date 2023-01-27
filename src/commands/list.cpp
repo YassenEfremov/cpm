@@ -34,7 +34,7 @@ namespace cpm {
 
         if (this->is_used("--global")) {
             if (!fs::exists(cwd / util::package_db)) {
-                // this check prevents the package DB from being created
+                // this check prevents the package database from being created
                 // when there are obviously no packages in it
                 spdlog::info("No packages installed!\n");
                 return;
@@ -53,7 +53,7 @@ namespace cpm {
         }
 
         spdlog::info("Packages installed in {}:\n", (cwd / util::packages_dir / "").string());
-        for (auto p : installed_packages) {
+        for (const auto &p : installed_packages) {
             spdlog::info("   {}\n", p.get_name());
         }
 	}
