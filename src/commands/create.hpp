@@ -1,7 +1,7 @@
 #ifndef CREATE_H
 #define CREATE_H
 
-#include "command.hpp"
+#include "commands/command.hpp"
 
 #include <string>
 

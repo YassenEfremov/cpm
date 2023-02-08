@@ -1,4 +1,4 @@
-#include "util.hpp"
+#include "paths.hpp"
 
 #include <cstdlib>
 
@@ -8,7 +8,7 @@
 namespace fs = std::filesystem;
 
 
-namespace cpm::util {
+namespace cpm::paths {
 
 	const fs::path packages_dir = "lib";
 

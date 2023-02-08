@@ -2,7 +2,7 @@
 #define REPOSITORY_H
 
 #include <filesystem>
-#include <vector>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -14,7 +14,7 @@ namespace cpm {
 	 * 
 	 * @tparam T the type of objects to store
 	 */
-	template<typename T>
+	template<typename T, typename P>
 	class Repository {
 
 		public:
@@ -26,6 +26,13 @@ namespace cpm {
 		 */
 		Repository(const fs::path &filename) : filename(filename) {}
 		virtual ~Repository() = default;
+
+		/**
+		 * @brief Getter for filename
+		 * 
+		 * @return The name of the repository file
+		 */
+		const fs::path &get_filename() const { return this->filename; }
 
 		/**
 		 * @brief Add the specified objects/s to the repository
@@ -50,7 +57,7 @@ namespace cpm {
 		 * 
 		 * @return A list of all the objects in the repository
 		 */
-		virtual std::vector<T> list() = 0;
+		virtual std::unordered_set<T, P> list() = 0;
 
 
 		protected:
@@ -61,4 +68,3 @@ namespace cpm {
 
 
 #endif	// REPOSITORY_H
-

@@ -1,13 +1,12 @@
-#include "install.hpp"
+#include "commands/install.hpp"
 
-#include "command.hpp"
-#include "../db/package_db.hpp"
-#include "../package.hpp"
-#include "../script/cpm_pack.hpp"
-#include "../util.hpp"
+#include "commands/command.hpp"
+#include "db/package_db.hpp"
+#include "package.hpp"
+#include "script/cpm_pack.hpp"
+#include "paths.hpp"
 
 #include "cpr/cpr.h"
-#include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
 extern "C" {
@@ -20,6 +19,7 @@ extern "C" {
 #include <string>
 #include <vector>
 
+#include <cstdint>
 #include <cstdlib>
 
 namespace fs = std::filesystem;
@@ -32,29 +32,26 @@ namespace cpm {
 	void InstallCommand::run() {
 
         auto package_names = this->get<std::vector<std::string>>("packages");
-        auto packages = std::vector<Package>(package_names.begin(), package_names.end());
-
-        fs::path cwd;
-        if (this->is_used("--global")) {
-            cwd = util::global_dir;
-        } else {
-            cwd = fs::current_path();
+        // auto packages = std::vector<Package>(package_names.begin(), package_names.end());
+        std::vector<Package> packages;
+        for (const auto &name : package_names) {
+            packages.push_back(Package{name});
         }
 
         for (const auto &package : packages) {
 
-            if (fs::exists(cwd / util::packages_dir / package.get_name() / "")) {             // TODO: check the local package database instead
+            if (fs::exists(this->context.cwd / paths::packages_dir / package.name / "")) {             // TODO: check the local package database instead
                 throw std::invalid_argument("Package directory already exists!");
             }
 
             spdlog::info(
                 "Installing package into {} ...\n",
-                (cwd / util::packages_dir / package.get_name() / "").string()
+                (this->context.cwd / paths::packages_dir / package.name / "").string()
             );
 
             cpr::Response response = this->download(package,
                 [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
-                   cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
+				   cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
                     double downloaded = static_cast<double>(downloadNow);
                     double total = static_cast<double>(downloadTotal);
                     std::string unit = "B";
@@ -79,7 +76,9 @@ namespace cpm {
             );
             spdlog::info(" done.\n");
 
-            this->extract(response.text, cwd / util::packages_dir / package.get_name(),
+            this->extract(
+                response.text,
+                this->context.cwd / paths::packages_dir / package.name,
                 [](int currentEntry, int totalEntries) {
                     spdlog::info("\rExtracting archive entries {}/{}", currentEntry, totalEntries);
                     return true;
@@ -87,16 +86,11 @@ namespace cpm {
             );
             spdlog::info(" done.\n");
 
-            if (this->is_used("--global")) {
-                PackageDB db(cwd / util::package_db);
-                int rows_modified = db.add(package);
-                spdlog::info("Package DB: modified {} row/s\n", rows_modified);
-
-            } else {
-                CPMPack cpm_pack(cwd / util::package_config);
-                int lines_modified = cpm_pack.add(package);
-                spdlog::info("cpm_pack.json: modified {} line/s\n", lines_modified);
-            }
+            int records_modified = this->context.repo->add(package);
+            spdlog::info(
+                "{}: modified {} record/s\n",
+                this->context.repo->get_filename().filename().string(), records_modified
+            );
         }
     }
 
@@ -106,10 +100,10 @@ namespace cpm {
             cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
             cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
             std::intptr_t userdata
-        )> progress
+        )> download_progress
     ) {
         cpr::Response res = cpr::Head(
-            cpr::Url{(util::api_url / util::repo_name / package.get_name() / "zipball").string()}
+            cpr::Url{(paths::api_url / paths::repo_name / package.name / "zipball").string()}
         );
 
         if (res.status_code != cpr::status::HTTP_OK) {
@@ -117,15 +111,17 @@ namespace cpm {
         }
 
         res = cpr::Get(
-            cpr::Url{(util::api_url / util::repo_name / package.get_name() / "zipball").string()},
-            cpr::ProgressCallback(progress)
+            cpr::Url{(paths::api_url / paths::repo_name / package.name / "zipball").string()},
+            cpr::ProgressCallback(download_progress)
         );
 
         return res;
 	}
 
-	void InstallCommand::extract(const std::string &stream, const fs::path &output_dir,
-                                 bool(*on_extract)(int currentEntry, int totalEntries)) {
+	void InstallCommand::extract(
+        const std::string &stream, const fs::path &output_dir,
+        std::function<bool(int currentEntry, int totalEntries)> on_extract
+    ) {
         struct zip_t *zip = zip_stream_open(stream.c_str(), stream.size(), 0, 'r');
 
         std::size_t n = zip_entries_total(zip);

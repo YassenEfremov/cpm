@@ -7,7 +7,7 @@
 namespace fs = std::filesystem;
 
 
-namespace cpm::util {
+namespace cpm::paths {
 
 	/**
 	 * @brief The directory under which packages are installed

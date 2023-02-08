@@ -1,8 +1,8 @@
-#include "create.hpp"
+#include "commands/create.hpp"
 
-#include "command.hpp"
-#include "../script/cpm_pack.hpp"
-#include "../util.hpp"
+#include "commands/command.hpp"
+#include "script/cpm_pack.hpp"
+#include "paths.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -18,9 +18,9 @@ namespace cpm {
 
     void CreateCommand::run() {
 
-        CPMPack cpm_pack(fs::current_path() / util::package_config);
+        CPMPack cpm_pack(this->context.cwd / paths::package_config);
         Package new_package = cpm_pack.create();
 
-        spdlog::info("Created package \"{}\"\n", new_package.get_name());
+        spdlog::info("Created package \"{}\"\n", new_package.name);
 	}
 }

@@ -1,8 +1,8 @@
 #ifndef INSTALL_H
 #define INSTALL_H
 
-#include "command.hpp"
-#include "../package.hpp"
+#include "commands/command.hpp"
+#include "package.hpp"
 
 #include "cpr/cpr.h"
 
@@ -20,9 +20,9 @@ namespace cpm {
 	/**
 	 * @brief A class representing the cpm install command
 	 * 
-	 * This command downloads the specified GitHub repository
+	 * This command installs the specified package
 	 */
-	class InstallCommand : public Command {
+	class InstallCommand : virtual public Command {
 
 		public:
 
@@ -39,7 +39,7 @@ namespace cpm {
 		void run() override;
 
 
-		private:
+		protected:
 
 		/**
 		 * @brief Download the specified package repository
@@ -55,7 +55,7 @@ namespace cpm {
 				cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
 				cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
 				std::intptr_t userdata
-			)> progress
+			)> download_progress
 		);
 
 		/**
@@ -65,8 +65,35 @@ namespace cpm {
 		 * @param output_dir the output directory (including the package name!)
 		 * @param on_extract a function to show the extraction progress
 		 */
-		void extract(const std::string &stream, const fs::path &output_dir,
-					 bool(*on_extract)(int currentEntry, int totalEntries));
+		void extract(
+			const std::string &stream, const fs::path &output_dir,
+			std::function<bool(int currentEntry, int totalEntries)> on_extract
+		);
+
+		// /**
+		//  * @brief Progress callback for the download function
+		//  * 
+		//  * @return true on success, false on failure
+		//  */
+		// std::function<bool(
+		// 	cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
+		// 	cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
+		// 	std::intptr_t userdata
+		// )> download_progress;
+		// bool download_progress(
+		// 	cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
+		// 	cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
+		// 	std::intptr_t userdata
+		// );
+
+		// /**
+		//  * @brief Progress callback for the extract function
+		//  *  
+		//  * @return true on success, false on failure
+		//  */
+		// bool (*on_extract)(int currentEntry, int totalEntries);
+		// std::function<bool(int currentEntry, int totalEntries)> on_extract;
+		// bool on_extract(int currentEntry, int totalEntries);
 	};
 }
 

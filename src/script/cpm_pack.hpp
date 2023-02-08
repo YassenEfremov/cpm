@@ -1,13 +1,14 @@
 #ifndef CPM_PACK_H
 #define CPM_PACK_H
 
-#include "../package.hpp"
-#include "../repository.hpp"
+#include "package.hpp"
+#include "repository.hpp"
 
 #include "nlohmann/json.hpp"
 
 #include <filesystem>
-#include <vector>
+#include <string>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -17,7 +18,7 @@ namespace cpm {
 	/**
 	 * @brief A class representing the cpm_pack.json
 	 */
-	class CPMPack : public Repository<Package> {
+	class CPMPack : public Repository<Package, Package::PackageHash> {
 
 		public:
 
@@ -49,10 +50,10 @@ namespace cpm {
 		/**
 		 * @brief List all of the installed packages in the cpm_pack.json file
 		 * 
-		 * @return A list of all the installed packages in the cpm_pack.json
+		 * @return A map of all the installed packages in the cpm_pack.json
 		 * 		   file
 		 */
-		std::vector<Package> list() override;
+		std::unordered_set<Package, Package::PackageHash> list() override;
 
 		/**
 		 * @brief Create a new package with the default field values in the
@@ -77,4 +78,3 @@ namespace cpm {
 
 
 #endif	// CPM_PACK_H
-

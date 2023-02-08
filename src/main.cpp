@@ -23,8 +23,8 @@ int main(int argc, char *argv[]) {
 
 
     try {
-        cpm::parse_args(argc, argv);
-        cpm::commands[argv[1]]->run();
+        cpm::Parser::parse_args(argc, argv);
+        cpm::Parser::commands[argv[1]]->run();
 
     } catch (const std::exception &e) {
         if (argc < 2) {

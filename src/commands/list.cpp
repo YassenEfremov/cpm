@@ -1,12 +1,11 @@
-#include "list.hpp"
+#include "commands/list.hpp"
 
-#include "command.hpp"
-#include "../db/package_db.hpp"
-#include "../package.hpp"
-#include "../script/cpm_pack.hpp"
-#include "../util.hpp"
+#include "commands/command.hpp"
+#include "db/package_db.hpp"
+#include "package.hpp"
+#include "script/cpm_pack.hpp"
+#include "paths.hpp"
 
-#include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
 #include <filesystem>
@@ -22,39 +21,26 @@ namespace cpm {
 
     void ListCommand::run() {
 
-        fs::path cwd;
-        if (this->is_used("--global")) {
-            cwd = util::global_dir;
-
-        } else {
-            cwd = fs::current_path();
+        if (!fs::exists(this->context.cwd / this->context.repo->get_filename())) {
+            spdlog::info("No packages installed!\n");
+            return;
         }
 
-        std::vector<cpm::Package> installed_packages;
-
-        if (this->is_used("--global")) {
-            if (!fs::exists(cwd / util::package_db)) {
-                // this check prevents the package database from being created
-                // when there are obviously no packages in it
-                spdlog::info("No packages installed!\n");
-                return;
-            }
-            PackageDB db(cwd / util::package_db);
-            installed_packages = db.list();
-
-        } else {
-            CPMPack cpm_pack(cwd / util::package_config);
-            installed_packages = cpm_pack.list();
-        }
+        auto installed_packages = this->context.repo->list();
 
         if (installed_packages.empty()) {
             spdlog::info("No packages installed!\n");
             return;
         }
 
-        spdlog::info("Packages installed in {}:\n", (cwd / util::packages_dir / "").string());
+        spdlog::info("Packages in {}:\n", (this->context.cwd / paths::packages_dir / "").string());
         for (const auto &p : installed_packages) {
-            spdlog::info("   {}\n", p.get_name());
+            if (!fs::exists(this->context.cwd / paths::packages_dir / p.name)) {
+                spdlog::info("   {} (not installed)\n", p.name);
+                
+            } else {
+                spdlog::info("   {}\n", p.name);
+            }
         }
 	}
 }
