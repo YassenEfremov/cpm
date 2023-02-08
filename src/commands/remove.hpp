@@ -1,7 +1,7 @@
 #ifndef REMOVE_H
 #define REMOVE_H
 
-#include "command.hpp"
+#include "commands/command.hpp"
 
 #include <string>
 
@@ -13,7 +13,7 @@ namespace cpm {
 	 * 
 	 * This command removes the specified package
 	 */
-	class RemoveCommand : public Command {
+	class RemoveCommand : virtual public Command {
 
 		public:
 

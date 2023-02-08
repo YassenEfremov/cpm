@@ -3,37 +3,26 @@
 
 #include <string>
 
+#include <cstddef>
+
 
 namespace cpm {
 
 	/**
-	 * @brief A class representing a cpm package
+	 * @brief A struct representing a cpm package
 	 */
-	class Package {
-
-		public:
-
-		/**
-		 * @brief Constructor for cpm package
-		 * 
-		 * @param name the package name
-		 */
-		Package(const std::string &name);
-
-		/**
-		 * @brief Getter for name
-		 * 
-		 * @return The name of the package
-		*/
-		const std::string &get_name() const;
-
-
-		private:
+	struct Package {
 
 		std::string name;
+		// Version version;
+
+		bool operator==(const Package &other) const;
+
+		struct PackageHash {
+			std::size_t operator()(const Package &package) const noexcept;
+		};
 	};
 }
 
 
 #endif	// PACKAGE_H
-

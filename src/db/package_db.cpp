@@ -1,7 +1,7 @@
-#include "package_db.hpp"
+#include "db/package_db.hpp"
 
-#include "../package.hpp"
-#include "../repository.hpp"
+#include "package.hpp"
+#include "repository.hpp"
 
 #include "sqlite3.h"
 
@@ -9,6 +9,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <unordered_set>
+
+#include <cstdlib>
 
 namespace fs = std::filesystem;
 
@@ -16,6 +19,7 @@ namespace fs = std::filesystem;
 namespace cpm {
 	
 	PackageDB::PackageDB(const fs::path &filename) : Repository(filename) {
+		fs::create_directories(filename.parent_path());
 		int err = sqlite3_open(filename.string().c_str(), &this->package_db);
 		if (err) {
 			sqlite3_close(this->package_db);
@@ -46,7 +50,7 @@ namespace cpm {
 			"INSERT INTO installed_packages VALUES (?);"
 		, -1, &stmt, nullptr);
 		
-		sqlite3_bind_text(stmt, 1, package.get_name().c_str(), package.get_name().length(), SQLITE_STATIC);
+		sqlite3_bind_text(stmt, 1, package.name.c_str(), package.name.length(), SQLITE_STATIC);
 		sqlite3_step(stmt);
 		int rows_modified = sqlite3_total_changes(this->package_db);
 
@@ -60,7 +64,7 @@ namespace cpm {
 			"DELETE FROM installed_packages WHERE name = ?;"
 		, -1, &stmt, nullptr);
 		
-		sqlite3_bind_text(stmt, 1, package.get_name().c_str(), package.get_name().length(), SQLITE_STATIC);
+		sqlite3_bind_text(stmt, 1, package.name.c_str(), package.name.length(), SQLITE_STATIC);
 		sqlite3_step(stmt);
 		int rows_modified = sqlite3_total_changes(this->package_db);
 		
@@ -68,14 +72,14 @@ namespace cpm {
 		return rows_modified;
 	}
 
-	std::vector<Package> PackageDB::list() {
-		std::vector<Package> packages;
+	std::unordered_set<Package, Package::PackageHash> PackageDB::list() {
+		std::unordered_set<Package, Package::PackageHash> packages;
 		char *err_msg;
         int err = sqlite3_exec(this->package_db, "SELECT name FROM installed_packages;",
             [](void *packages, int cols, char **col_vals, char **col_names) {
-				Package package(col_vals[0]);
-				static_cast<std::vector<Package> *>(packages)->push_back(package);
-                return 0;
+				Package package{col_vals[0]};
+				static_cast<std::unordered_set<Package, Package::PackageHash> *>(packages)->insert(package);
+                return EXIT_SUCCESS;
             }, &packages, &err_msg);
 		if (err != SQLITE_OK) {
 			sqlite3_free(err_msg);

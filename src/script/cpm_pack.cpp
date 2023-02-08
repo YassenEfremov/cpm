@@ -1,8 +1,8 @@
-#include "cpm_pack.hpp"
+#include "script/cpm_pack.hpp"
 
-#include "../package.hpp"
-#include "../repository.hpp"
-#include "../util.hpp"
+#include "package.hpp"
+#include "repository.hpp"
+#include "paths.hpp"
 
 #include "nlohmann/json.hpp"
 
@@ -11,13 +11,14 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
 
 namespace cpm {
 	
-	CPMPack::CPMPack(const fs::path &filename) : Repository(filename) {	
+	CPMPack::CPMPack(const fs::path &filename) : Repository(filename) {
 		if (fs::exists(this->filename) && !fs::is_empty(this->filename)) {
 			std::ifstream cpm_pack_in(this->filename);
 			this->cpm_pack_json = nlohmann::ordered_json::parse(cpm_pack_in);
@@ -25,14 +26,14 @@ namespace cpm {
 	}
 
 	int CPMPack::add(const cpm::Package &package) {
-		this->cpm_pack_json["dependencies"] += package.get_name();
+		this->cpm_pack_json["dependencies"] += package.name;
 		this->save();
 		return 1;
 	}
 
 	int CPMPack::remove(const cpm::Package &package) {
 		for (auto &[i, p] : this->cpm_pack_json["dependencies"].items()) {
-			if (p.get<std::string>() == package.get_name()) {
+			if (p.get<std::string>() == package.name) {
 				this->cpm_pack_json["dependencies"].erase(std::stoi(i));
 				break;
 			}
@@ -41,9 +42,21 @@ namespace cpm {
 		return 1;
 	}
 
-	std::vector<Package> CPMPack::list() {
-		auto packages = this->cpm_pack_json["dependencies"].get<std::vector<std::string>>();
-		return std::vector<Package>(packages.begin(), packages.end());
+	std::unordered_set<Package, Package::PackageHash> CPMPack::list() {
+		std::vector<std::string> package_names;
+		try {
+			package_names = this->cpm_pack_json["dependencies"].get<std::vector<std::string>>();
+			
+		} catch(const std::exception &e) {
+			return std::unordered_set<Package, Package::PackageHash>();
+		}
+			
+		// return std::unordered_set<Package, Package::PackageHash>(packages.begin(), packages.end());
+		std::unordered_set<Package, Package::PackageHash> packages;
+		for (const auto &p : package_names) {
+			packages.insert(Package{p});
+		}
+		return packages;
 	}
 
 	Package CPMPack::create() {
@@ -55,7 +68,7 @@ namespace cpm {
         this->cpm_pack_json["author"] = "";
         this->cpm_pack_json["license"] = "";
 		this->save();
-		return Package(default_package_name);
+		return Package{default_package_name};
 	}
 
 	void CPMPack::save() {

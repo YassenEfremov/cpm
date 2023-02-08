@@ -1,13 +1,13 @@
 #ifndef PACKAGE_DB_H
 #define PACKAGE_DB_H
 
-#include "../package.hpp"
-#include "../repository.hpp"
+#include "package.hpp"
+#include "repository.hpp"
 
 #include "sqlite3.h"
 
 #include <filesystem>
-#include <vector>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -17,7 +17,7 @@ namespace cpm {
 	/**
 	 * @brief A class representing the local package database
 	 */
-	class PackageDB : public Repository<Package> {
+	class PackageDB : public Repository<Package, Package::PackageHash> {
 
 		public:
 
@@ -52,7 +52,7 @@ namespace cpm {
 		 * 
 		 * @return A list of all the installed packages in the database
 		 */
-		std::vector<Package> list() override;
+		std::unordered_set<Package, Package::PackageHash> list() override;
 
 
 		private:

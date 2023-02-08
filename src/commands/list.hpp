@@ -1,7 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include "command.hpp"
+#include "commands/command.hpp"
 
 #include <string>
 
