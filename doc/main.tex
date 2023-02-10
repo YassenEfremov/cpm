@@ -2,12 +2,11 @@
 
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage[english, bulgarian]{babel}
+\usepackage[english, main=bulgarian]{babel}
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
 \usepackage{xcolor}
-
 \definecolor{comment}{HTML}{7F848E}
 \definecolor{keyword}{HTML}{88aaee}
 \definecolor{function}{HTML}{bb66ff}
@@ -16,14 +15,13 @@
 \definecolor{directive}{HTML}{966440}
 \definecolor{background}{rgb}{0.95,0.95,0.95}
 
-
 \usepackage{hyperref}
-
 \hypersetup{
     colorlinks=true,
-    linkcolor=darkgray,
-    filecolor=magenta,
-    urlcolor=blue,
+    allcolors=blue,
+    % linkcolor=darkgray,
+    % urlcolor=blue,
+    % citecolor=blue,
     pdftitle={Diploma},
     pdfpagemode=FullScreen,
 }
@@ -31,7 +29,6 @@
 
 \usepackage{listings}
 \usepackage{sourcecodepro}
-
 \lstdefinestyle{shell}{
     basicstyle=\ttfamily\footnotesize,
     backgroundcolor=\color{background},
@@ -54,7 +51,6 @@
     % showstringspaces=false,
     % showtabs=false,
 }
-
 \lstdefinestyle{cpp}{
     basicstyle=\ttfamily\footnotesize,
     backgroundcolor=\color{background},
@@ -81,6 +77,9 @@
     % showstringspaces=false,
     % showtabs=false,
 }
+
+\usepackage{biblatex}
+\addbibresource{references.bib}
 
 
 % \title{Тема: Система за управление на пакети}
@@ -142,13 +141,14 @@
 \input{chapters/conclusion}
 
 
-\chapter*{Използвана литература}
+% \chapter*{Използвана литература}
 
-\begin{itemize}
-    \item \url{https://cppreference.com}
-    \item \url{https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527}
-\end{itemize}
+% \begin{itemize}
+%     \item \url{https://cppreference.com}
+%     \item \url{https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527}
+% \end{itemize}
 
+\printbibliography
 
 \tableofcontents
 
