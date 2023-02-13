@@ -2,7 +2,7 @@
 
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage[english, main=bulgarian]{babel}
+\usepackage[main=bulgarian, english]{babel}
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
@@ -13,7 +13,8 @@
 \definecolor{type}{HTML}{2266ff}
 \definecolor{string}{HTML}{d0ac55}
 \definecolor{directive}{HTML}{966440}
-\definecolor{background}{rgb}{0.95,0.95,0.95}
+\definecolor{background-code}{rgb}{0.95,0.95,0.95}
+\definecolor{background-shell}{rgb}{0.3,0.3,0.3}
 
 \usepackage{hyperref}
 \hypersetup{
@@ -29,10 +30,11 @@
 
 \usepackage{listings}
 \usepackage{sourcecodepro}
+\renewcommand{\lstlistingname}{Списък}
 \lstdefinestyle{shell}{
-    basicstyle=\ttfamily\footnotesize,
-    backgroundcolor=\color{background},
-    rulecolor=\color{background},
+    basicstyle=\ttfamily\footnotesize\color{white},
+    backgroundcolor=\color{background-shell},
+    rulecolor=\color{background-shell},
     language=sh,
     tabsize=4,
     captionpos=b,
@@ -53,8 +55,8 @@
 }
 \lstdefinestyle{cpp}{
     basicstyle=\ttfamily\footnotesize,
-    backgroundcolor=\color{background},
-    rulecolor=\color{background},
+    backgroundcolor=\color{background-code},
+    rulecolor=\color{background-code},
     language=C++,
     tabsize=4,
     captionpos=b,
@@ -80,11 +82,6 @@
 
 \usepackage{biblatex}
 \addbibresource{references.bib}
-
-
-% \title{Тема: Система за управление на пакети}
-% \author{Ясен Ефремов}
-% \date{2023}
 
 
 \begin{document}
@@ -140,13 +137,6 @@
 \input{chapters/chapter4}
 \input{chapters/conclusion}
 
-
-% \chapter*{Използвана литература}
-
-% \begin{itemize}
-%     \item \url{https://cppreference.com}
-%     \item \url{https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527}
-% \end{itemize}
 
 \printbibliography
 
