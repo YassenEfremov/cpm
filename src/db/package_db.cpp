@@ -89,4 +89,26 @@ namespace cpm {
 		sqlite3_free(err_msg);
 		return packages;
 	}
+
+	bool PackageDB::contains(const Package &package) {
+		sqlite3_stmt *stmt;
+		sqlite3_prepare(this->package_db,
+			"SELECT * FROM installed_packages WHERE name = ?;"
+		, -1, &stmt, nullptr);
+		
+		sqlite3_bind_text(stmt, 1, package.name.c_str(), package.name.length(), SQLITE_STATIC);
+		int row_count = 0;
+		
+		while (sqlite3_step(stmt) != SQLITE_DONE) {
+			row_count++;
+		}
+		
+		sqlite3_finalize(stmt);
+		
+		if (row_count > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 }

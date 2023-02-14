@@ -4,8 +4,12 @@
 #include "commands/command.hpp"
 #include "commands/install.hpp"
 #include "commands/remove.hpp"
+#include "package.hpp"
 
+#include <filesystem>
 #include <string>
+
+namespace fs = std::filesystem;
 
 
 namespace cpm {
@@ -32,6 +36,37 @@ namespace cpm {
 		 * 		  dependencies listed in there
 		 */
 		void run() override;
+
+
+		private:
+
+		/**
+		 * @brief Install the specified package and its dependencies
+		 * 
+		 * @param package the package to install
+		 * @param output_dir the output directory
+		 * 
+		 * @return The number of newly installed packages
+		 */
+		int install_package(const Package &package,
+							const fs::path &output_dir) override;
+
+		/**
+		 * @brief Perform some necessary checks before continuing with the
+		 * 		  installation
+		 *
+		 * @param package the package to check
+		 */
+		void check_if_installed(const Package &package) override;
+
+		/**
+		 * @brief Remove the specified package and its dependencies
+		 * 
+		 * @param package the package to remove
+		 * 
+		 * @return The number of removed unneeded packages
+		 */
+		int remove_package(const Package &package) override;
 	};
 }
 

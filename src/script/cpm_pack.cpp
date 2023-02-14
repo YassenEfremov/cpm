@@ -26,13 +26,17 @@ namespace cpm {
 	}
 
 	int CPMPack::add(const cpm::Package &package) {
+		if (this->contains(package)) {
+			return 0;
+		}
+
 		this->cpm_pack_json["dependencies"] += package.name;
 		this->save();
 		return 1;
 	}
 
 	int CPMPack::remove(const cpm::Package &package) {
-		for (auto &[i, p] : this->cpm_pack_json["dependencies"].items()) {
+		for (const auto &[i, p] : this->cpm_pack_json["dependencies"].items()) {
 			if (p.get<std::string>() == package.name) {
 				this->cpm_pack_json["dependencies"].erase(std::stoi(i));
 				break;
@@ -57,6 +61,14 @@ namespace cpm {
 			packages.insert(Package{p});
 		}
 		return packages;
+	}
+
+	bool CPMPack::contains(const Package &package) {
+		if (this->list().find(package) != this->list().end()) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	Package CPMPack::create() {

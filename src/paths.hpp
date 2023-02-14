@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef PATHS_H
+#define PATHS_H
 
 #include <filesystem>
 #include <string>	
@@ -42,4 +42,4 @@ namespace cpm::paths {
 }
 
 
-#endif	// UTIL_H
+#endif	// PATHS_H

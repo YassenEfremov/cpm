@@ -56,6 +56,15 @@ namespace cpm {
 		std::unordered_set<Package, Package::PackageHash> list() override;
 
 		/**
+		 * @brief Check if the specified package is in the cpm_pack.json file
+		 * 
+		 * @param package the package
+		 * 
+		 * @return true if the package is found, false otherwise
+		 */
+		bool contains(const Package &package) override;
+
+		/**
 		 * @brief Create a new package with the default field values in the
 		 * 		  current cpm_pack.json file
 		 * 
