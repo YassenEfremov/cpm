@@ -59,6 +59,15 @@ namespace cpm {
 		 */
 		virtual std::unordered_set<T, P> list() = 0;
 
+		/**
+		 * @brief Check if the specified object is in the repository
+		 * 
+		 * @param object the object
+		 * 
+		 * @return true if the object is found, false otherwise
+		 */
+		virtual bool contains(const T &object) = 0;
+
 
 		protected:
 

@@ -3,20 +3,24 @@
 #include "commands/command.hpp"
 #include "db/package_db.hpp"
 #include "package.hpp"
-#include "script/cpm_pack.hpp"
 #include "paths.hpp"
+#include "script/cpm_pack.hpp"
+#include "util.hpp"
 
 #include "cpr/cpr.h"
+#include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
 extern "C" {
     #include "zip.h"
 }
 
+#include <exception>
 #include <filesystem>
 #include <functional>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <cstdint>
@@ -33,68 +37,110 @@ namespace cpm {
 
         auto package_names = this->get<std::vector<std::string>>("packages");
         // auto packages = std::vector<Package>(package_names.begin(), package_names.end());
-        std::vector<Package> packages;
+        std::unordered_set<Package, Package::PackageHash> packages;
         for (const auto &name : package_names) {
-            packages.push_back(Package{name});
+            packages.insert(Package{name});
         }
 
+        int records_modified = 0;
         for (const auto &package : packages) {
-
-            if (fs::exists(this->context.cwd / paths::packages_dir / package.name / "")) {             // TODO: check the local package database instead
-                throw std::invalid_argument("Package directory already exists!");
+            try {
+                records_modified += this->install_package(
+                    package, this->context.cwd / paths::packages_dir / ""
+                );
+            
+            } catch(const std::exception &e) {
+                spdlog::get("stderr_logger")->error(e.what());
             }
+        }
 
-            spdlog::info(
-                "Installing package into {} ...\n",
-                (this->context.cwd / paths::packages_dir / package.name / "").string()
-            );
+        spdlog::info(
+            "{}: modified {} record/s\n",
+            this->context.repo->get_filename().filename().string(), records_modified
+        );
+    }
 
-            cpr::Response response = this->download(package,
-                [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
-				   cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
-                    double downloaded = static_cast<double>(downloadNow);
-                    double total = static_cast<double>(downloadTotal);
-                    std::string unit = "B";
-                    if (downloadNow >= 1000000) {
-                        downloaded /= 1000000;
-                        total /= 1000000;
-                        unit = "MB";
-                        spdlog::info("\r                                                        ");
+	int InstallCommand::install_package(const Package &package,
+                                        const fs::path &output_dir) {
 
-                    } else if (downloadNow >= 1000) {
-                        downloaded /= 1000;
-                        total /= 1000;
-                        unit = "KB";
-                        spdlog::info("\r                                                        ");
-                    }
-                    if (total < downloaded) {
-                        total = downloaded;
-                    }
-                    spdlog::info("\rDownloading repository {0:.2f}/{1:.2f} {2}", downloaded, total, unit);
-                    return true;
-                }
-            );
-            spdlog::info(" done.\n");
+        this->check_if_installed(package);
+        spdlog::info(
+            "Installing package into {} ...\n",
+            (output_dir / package.name / "").string()
+        );
 
-            this->extract(
-                response.text,
-                this->context.cwd / paths::packages_dir / package.name,
-                [](int currentEntry, int totalEntries) {
-                    spdlog::info("\rExtracting archive entries {}/{}", currentEntry, totalEntries);
-                    return true;
-                }
-            );
-            spdlog::info(" done.\n");
+        this->install_deps(package, output_dir);
 
-            int records_modified = this->context.repo->add(package);
-            spdlog::info(
-                "{}: modified {} record/s\n",
-                this->context.repo->get_filename().filename().string(), records_modified
-            );
+        return this->register_package(package);
+    }
+
+    void InstallCommand::check_if_installed(const Package &package) {
+        bool specified = this->context.repo->contains(package);
+        bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.name / "");
+
+        if (specified && installed) {
+            throw std::invalid_argument(package.name + ": package already installed!");
         }
     }
 
-	cpr::Response InstallCommand::download(
+	void InstallCommand::install_deps(const Package &package, const fs::path &output_dir) {
+        cpr::Response response = this->download_package(package,
+            [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
+                cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
+                double downloaded = static_cast<double>(downloadNow);
+                double total = static_cast<double>(downloadTotal);
+                std::string unit = "B";
+                if (downloadNow >= 1000000) {
+                    downloaded /= 1000000;
+                    total /= 1000000;
+                    unit = "MB";
+                    spdlog::info("\r                                                        ");
+
+                } else if (downloadNow >= 1000) {
+                    downloaded /= 1000;
+                    total /= 1000;
+                    unit = "KB";
+                    spdlog::info("\r                                                        ");
+                }
+                if (total < downloaded) {
+                    total = downloaded;
+                }
+                spdlog::info("\r    Downloading repository {0:.2f}/{1:.2f} {2}", downloaded, total, unit);
+                return true;
+            }
+        );
+        spdlog::info(" done.\n");
+
+        this->extract_package(
+            response.text, output_dir / package.name,
+            [](int currentEntry, int totalEntries) {
+                spdlog::info("\r    Extracting archive entries {}/{}", currentEntry, totalEntries);
+                return true;
+            }
+        );
+        spdlog::info(" done.\n");
+
+
+        cpr::Response res = cpr::Get(
+            cpr::Url{(paths::api_url / paths::repo_name / package.name / "contents" / paths::package_config).string()}
+        );
+        nlohmann::json res_json = nlohmann::json::parse(res.text);
+        nlohmann::json config_json = nlohmann::json::parse(
+            util::base64_decode(res_json["content"].get<std::string>())
+        );
+        if (!config_json.contains("dependencies")) {
+            return;
+        }
+        std::unordered_set<Package, Package::PackageHash> deps;
+        for (auto name : config_json["dependencies"].get<std::vector<std::string>>()) {
+            deps.insert(Package{name});
+        }
+        for (const auto &dep : deps) {
+            this->install_deps(dep, output_dir / package.name / paths::packages_dir / "");
+        }
+    }
+
+	cpr::Response InstallCommand::download_package(
         const Package &package,
         std::function<bool(
             cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
@@ -107,7 +153,7 @@ namespace cpm {
         );
 
         if (res.status_code != cpr::status::HTTP_OK) {
-            throw std::invalid_argument("Package not found!");
+            throw std::invalid_argument(package.name + ": package not found!");
         }
 
         res = cpr::Get(
@@ -118,7 +164,7 @@ namespace cpm {
         return res;
 	}
 
-	void InstallCommand::extract(
+	void InstallCommand::extract_package(
         const std::string &stream, const fs::path &output_dir,
         std::function<bool(int currentEntry, int totalEntries)> on_extract
     ) {
@@ -141,4 +187,8 @@ namespace cpm {
 
         zip_stream_close(zip);
 	}
+
+    int InstallCommand::register_package(const Package &package) {
+        return this->context.repo->add(package);
+    }
 }

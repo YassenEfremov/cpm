@@ -2,6 +2,7 @@
 
 #include "commands/command.hpp"
 #include "script/cpm_pack.hpp"
+#include "package.hpp"
 #include "paths.hpp"
 
 #include "spdlog/spdlog.h"

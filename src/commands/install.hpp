@@ -34,12 +34,40 @@ namespace cpm {
 		InstallCommand(const std::string &name);
 
 		/**
-		 * @brief Install the specified packages
+		 * @brief Execute the command
 		 */
 		void run() override;
 
 
 		protected:
+
+		/**
+		 * @brief Install the specified package and its dependencies
+		 * 
+		 * @param package the package to install
+		 * @param output_dir the output directory
+		 * 
+		 * @return The number of records modified in the repository
+		 */
+		virtual int install_package(const Package &package,
+									const fs::path &output_dir);
+
+		/**
+		 * @brief Perform some necessary checks before continuing with the
+		 * 		  installation
+		 *
+		 * @param package the package to check
+		 */
+		virtual void check_if_installed(const Package &package);
+
+		/**
+		 * @brief Install the specified package and its dependencies
+		 * 		  recursively
+		 * 
+		 * @param package the package to install
+		 * @param output_dir the output directory
+		 */
+		void install_deps(const Package &package, const fs::path &output_dir);
 
 		/**
 		 * @brief Download the specified package repository
@@ -49,7 +77,7 @@ namespace cpm {
 		 * 
 		 * @return A response object
 		 */
-		cpr::Response download(
+		cpr::Response download_package(
 			const Package &package,
 			std::function<bool(
 				cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
@@ -65,35 +93,19 @@ namespace cpm {
 		 * @param output_dir the output directory (including the package name!)
 		 * @param on_extract a function to show the extraction progress
 		 */
-		void extract(
+		void extract_package(
 			const std::string &stream, const fs::path &output_dir,
 			std::function<bool(int currentEntry, int totalEntries)> on_extract
 		);
 
-		// /**
-		//  * @brief Progress callback for the download function
-		//  * 
-		//  * @return true on success, false on failure
-		//  */
-		// std::function<bool(
-		// 	cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
-		// 	cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
-		// 	std::intptr_t userdata
-		// )> download_progress;
-		// bool download_progress(
-		// 	cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
-		// 	cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
-		// 	std::intptr_t userdata
-		// );
-
-		// /**
-		//  * @brief Progress callback for the extract function
-		//  *  
-		//  * @return true on success, false on failure
-		//  */
-		// bool (*on_extract)(int currentEntry, int totalEntries);
-		// std::function<bool(int currentEntry, int totalEntries)> on_extract;
-		// bool on_extract(int currentEntry, int totalEntries);
+		/**
+		 * @brief Register the specified package
+		 * 
+		 * @param package the package to register
+		 * 
+		 * @return The number of records modified in the repository
+		 */
+		int register_package(const Package &package);
 	};
 }
 

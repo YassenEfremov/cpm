@@ -54,6 +54,15 @@ namespace cpm {
 		 */
 		std::unordered_set<Package, Package::PackageHash> list() override;
 
+		/**
+		 * @brief Check if the specified package is in the package database
+		 * 
+		 * @param package the package
+		 * 
+		 * @return true if the package is found, false otherwise
+		 */
+		bool contains(const Package &package) override;
+
 
 		private:
 

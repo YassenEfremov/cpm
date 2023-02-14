@@ -8,8 +8,8 @@
 
 namespace cpm {
 
-	bool Package::operator==(const Package &other) const {
-		return this->name == other.name;
+	bool operator==(const Package &lhs, const Package &rhs) {
+		return lhs.name == rhs.name;
 	}
 
 	std::size_t Package::PackageHash::operator()(const Package &package) const noexcept {

@@ -1,7 +1,10 @@
 #ifndef PACKAGE_H
 #define PACKAGE_H
 
+// #include "semver.hpp"
+
 #include <string>
+#include <unordered_set>
 
 #include <cstddef>
 
@@ -13,14 +16,15 @@ namespace cpm {
 	 */
 	struct Package {
 
-		std::string name;
-		// Version version;
-
-		bool operator==(const Package &other) const;
-
 		struct PackageHash {
 			std::size_t operator()(const Package &package) const noexcept;
 		};
+
+		std::string name;
+		// SemVer version;
+		// std::unordered_set<Package, Package::PackageHash> dependencies;
+
+		friend bool operator==(const Package &lhs, const Package &rhs);
 	};
 }
 
