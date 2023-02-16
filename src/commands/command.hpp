@@ -16,12 +16,12 @@ namespace fs = std::filesystem;
 namespace cpm {
 
 	/**
-	 * @brief A struct representing a cpm command context
+	 * @brief A struct representing the context a cpm runs in
 	 */
 	struct CommandContext {
 
 		fs::path cwd;
-		std::unique_ptr<Repository<Package, Package::PackageHash>> repo;
+		std::shared_ptr<Repository<Package, Package::Hash>> repo;
 	};
 
 	/**
@@ -42,7 +42,7 @@ namespace cpm {
 		virtual ~Command() = default;
 
 		/**
-		 * @brief Run the command
+		 * @brief Execute the command
 		 */
 		virtual void run() = 0;
 

@@ -5,6 +5,7 @@
 #include "package.hpp"
 #include "paths.hpp"
 #include "script/cpm_pack.hpp"
+#include "semver.hpp"
 #include "util.hpp"
 
 #include "cpr/cpr.h"
@@ -27,6 +28,7 @@ extern "C" {
 #include <cstdlib>
 
 namespace fs = std::filesystem;
+using json = nlohmann::ordered_json;
 
 
 namespace cpm {
@@ -35,15 +37,41 @@ namespace cpm {
 
 	void InstallCommand::run() {
 
-        auto package_names = this->get<std::vector<std::string>>("packages");
-        // auto packages = std::vector<Package>(package_names.begin(), package_names.end());
-        std::unordered_set<Package, Package::PackageHash> packages;
-        for (const auto &name : package_names) {
-            packages.insert(Package{name});
+        auto packages_str = this->get<std::vector<std::string>>("packages");
+        std::unordered_set<Package, Package::Hash> packages;
+        for (const auto &package_str : packages_str) {
+            auto tokens = util::split_string(package_str, "@");
+            if (tokens.size() == 2) {
+                spdlog::info("Checking package {}@{} ...", tokens[0], tokens[1]);
+                Package new_package(tokens[0], SemVer(tokens[1]));
+                try {
+                    new_package.init();
+                } catch(const std::exception &e) {
+                    spdlog::info(" failed!\n");
+                    throw std::invalid_argument(e.what());
+                }
+                spdlog::info(" done.\n");
+                packages.insert(new_package);
+
+            } else if (tokens.size() == 1) {
+                spdlog::info("Resolving version for package {} ...", tokens[0]);
+                Package new_package(tokens[0]);
+                try {
+                    new_package.init();
+                } catch(const std::exception &e) {
+                    spdlog::info(" failed!\n");
+                    throw std::invalid_argument(e.what());
+                }
+                spdlog::info(" found latest: {}\n", new_package.get_version().to_string());
+                packages.insert(new_package);
+
+            } else {
+                throw std::invalid_argument(package_str + ": invalid package format!");
+            }
         }
 
         int records_modified = 0;
-        for (const auto &package : packages) {
+        for (auto package : packages) {
             try {
                 records_modified += this->install_package(
                     package, this->context.cwd / paths::packages_dir / ""
@@ -64,9 +92,10 @@ namespace cpm {
                                         const fs::path &output_dir) {
 
         this->check_if_installed(package);
+
         spdlog::info(
             "Installing package into {} ...\n",
-            (output_dir / package.name / "").string()
+            (output_dir / package.get_name() / "").string()
         );
 
         this->install_deps(package, output_dir);
@@ -76,10 +105,10 @@ namespace cpm {
 
     void InstallCommand::check_if_installed(const Package &package) {
         bool specified = this->context.repo->contains(package);
-        bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.name / "");
+        bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
 
         if (specified && installed) {
-            throw std::invalid_argument(package.name + ": package already installed!");
+            throw std::invalid_argument(package.get_name() + ": package already installed!");
         }
     }
 
@@ -112,7 +141,7 @@ namespace cpm {
         spdlog::info(" done.\n");
 
         this->extract_package(
-            response.text, output_dir / package.name,
+            response.text, output_dir / package.get_name(),
             [](int currentEntry, int totalEntries) {
                 spdlog::info("\r    Extracting archive entries {}/{}", currentEntry, totalEntries);
                 return true;
@@ -120,23 +149,8 @@ namespace cpm {
         );
         spdlog::info(" done.\n");
 
-
-        cpr::Response res = cpr::Get(
-            cpr::Url{(paths::api_url / paths::repo_name / package.name / "contents" / paths::package_config).string()}
-        );
-        nlohmann::json res_json = nlohmann::json::parse(res.text);
-        nlohmann::json config_json = nlohmann::json::parse(
-            util::base64_decode(res_json["content"].get<std::string>())
-        );
-        if (!config_json.contains("dependencies")) {
-            return;
-        }
-        std::unordered_set<Package, Package::PackageHash> deps;
-        for (auto name : config_json["dependencies"].get<std::vector<std::string>>()) {
-            deps.insert(Package{name});
-        }
-        for (const auto &dep : deps) {
-            this->install_deps(dep, output_dir / package.name / paths::packages_dir / "");
+        for (const auto &dep : *package.get_dependencies()) {
+            this->install_deps(dep, output_dir / package.get_name() / paths::packages_dir / "");
         }
     }
 
@@ -149,15 +163,15 @@ namespace cpm {
         )> download_progress
     ) {
         cpr::Response res = cpr::Head(
-            cpr::Url{(paths::api_url / paths::repo_name / package.name / "zipball").string()}
+            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() / "zipball" / package.get_version().to_string()).string()}
         );
 
         if (res.status_code != cpr::status::HTTP_OK) {
-            throw std::invalid_argument(package.name + ": package not found!");
+            throw std::invalid_argument(package.get_name() + ": package not found!");
         }
 
         res = cpr::Get(
-            cpr::Url{(paths::api_url / paths::repo_name / package.name / "zipball").string()},
+            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() / "zipball" / package.get_version().to_string()).string()},
             cpr::ProgressCallback(download_progress)
         );
 

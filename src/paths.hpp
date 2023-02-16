@@ -38,7 +38,7 @@ namespace cpm::paths {
 	/**
 	 * @brief The name of the repository where cpm should search for packages
 	 */
-	extern const std::string repo_name;
+	extern const std::string owner_name;
 }
 
 

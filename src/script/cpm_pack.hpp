@@ -18,7 +18,7 @@ namespace cpm {
 	/**
 	 * @brief A class representing the cpm_pack.json
 	 */
-	class CPMPack : public Repository<Package, Package::PackageHash> {
+	class CPMPack : public Repository<Package, Package::Hash> {
 
 		public:
 
@@ -53,7 +53,7 @@ namespace cpm {
 		 * @return A map of all the installed packages in the cpm_pack.json
 		 * 		   file
 		 */
-		std::unordered_set<Package, Package::PackageHash> list() override;
+		std::unordered_set<Package, Package::Hash> list() override;
 
 		/**
 		 * @brief Check if the specified package is in the cpm_pack.json file
@@ -75,10 +75,10 @@ namespace cpm {
 
 		private:
 
-		nlohmann::ordered_json cpm_pack_json;
+		nlohmann::ordered_json config_json;
 
 		/**
-		 * @brief Save the current cpm_pack_json to a file with the current
+		 * @brief Save the current config_json to a file with the current
 		 * 		  filename
 		 */
 		void save();

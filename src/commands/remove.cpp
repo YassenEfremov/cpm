@@ -5,6 +5,8 @@
 #include "package.hpp"
 #include "paths.hpp"
 #include "script/cpm_pack.hpp"
+#include "semver.hpp"
+#include "util.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -26,11 +28,10 @@ namespace cpm {
 
     void RemoveCommand::run() {
 
-        auto package_names = this->get<std::vector<std::string>>("packages");
-        // auto packages = std::vector<Package>(package_names.begin(), package_names.end());
-        std::unordered_set<Package, Package::PackageHash> packages;
-        for (const auto &name : package_names) {
-            packages.insert(Package{name});
+        auto packages_str = this->get<std::vector<std::string>>("packages");
+        std::unordered_set<Package, Package::Hash> packages;
+        for (const auto &package_str : packages_str) {
+            packages.insert(Package(package_str));
         }
 
         int records_modified = 0;
@@ -40,7 +41,6 @@ namespace cpm {
 
             } catch(const std::exception &e) {
                 spdlog::get("stderr_logger")->error(e.what());
-                continue;
             }
         }
 
@@ -55,7 +55,7 @@ namespace cpm {
         this->check_if_not_installed(package);
         spdlog::info(
             "Removing package from {} ...\n",
-            (this->context.cwd / paths::packages_dir / package.name / "").string()
+            (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
         );
 
         std::uintmax_t n = this->delete_package(package);
@@ -66,15 +66,15 @@ namespace cpm {
 
     void RemoveCommand::check_if_not_installed(const Package &package) {
         bool specified = this->context.repo->contains(package);
-        bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.name / "");
+        bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
 
         if (!specified && !installed) {
-            throw std::invalid_argument(package.name + ": package not installed!");
+            throw std::invalid_argument(package.get_name() + ": package not installed!");
         }
     }
 
 	std::uintmax_t RemoveCommand::delete_package(const Package &package) {
-        return fs::remove_all(this->context.cwd / paths::packages_dir / package.name / "");
+        return fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
     }
 
 	int RemoveCommand::unregister_package(const Package &package) {

@@ -17,7 +17,7 @@ namespace cpm {
 	/**
 	 * @brief A class representing the local package database
 	 */
-	class PackageDB : public Repository<Package, Package::PackageHash> {
+	class PackageDB : public Repository<Package, Package::Hash> {
 
 		public:
 
@@ -52,7 +52,7 @@ namespace cpm {
 		 * 
 		 * @return A list of all the installed packages in the database
 		 */
-		std::unordered_set<Package, Package::PackageHash> list() override;
+		std::unordered_set<Package, Package::Hash> list() override;
 
 		/**
 		 * @brief Check if the specified package is in the package database
