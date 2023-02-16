@@ -86,6 +86,8 @@ namespace cpm {
             "{}: modified {} record/s\n",
             this->context.repo->get_filename().filename().string(), records_modified
         );
+
+        this->final_message(packages);
     }
 
 	int InstallCommand::install_package(const Package &package,
@@ -204,5 +206,45 @@ namespace cpm {
 
     int InstallCommand::register_package(const Package &package) {
         return this->context.repo->add(package);
+    }
+
+	void InstallCommand::final_message(
+        const std::unordered_set<cpm::Package, cpm::Package::Hash> &packages
+    ) {
+        spdlog::info("\nTo use the package/s add the following commands to your CMakeLists.txt:\n");
+        for (const auto &package : packages) {
+            spdlog::info("    add_subdirectory(lib/{})\n", package.get_name());
+        }
+
+        spdlog::info(
+            "\n"
+            "    target_include_directories(<target>\n"
+            "       PRIVATE\n"
+        );
+        for (const auto &package : packages) {
+            spdlog::info(
+                "            ${{CMAKE_CURRENT_SOURCE_DIR}}/lib/{}/include\n",
+                package.get_name()
+            );
+        }
+        spdlog::info(
+            "    )\n"
+            "\n"
+        );
+
+        spdlog::info(
+            "    target_link_libraries(<target>\n"
+            "       PRIVATE\n"
+        );
+        for (const auto &package : packages) {
+            spdlog::info(
+                "            {}\n",
+                package.get_name()
+            );
+        }
+        spdlog::info(
+            "    )\n"
+            "\n"
+        );
     }
 }
