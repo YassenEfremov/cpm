@@ -71,6 +71,8 @@ namespace cpm {
             "Installed {} new, removed {} unspecified\n",
             new_packages, unspecified_packages
         );
+
+        this->final_message(packages);
 	}
 
     int SyncCommand::install_package(const Package &package,

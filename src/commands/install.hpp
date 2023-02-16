@@ -108,6 +108,16 @@ namespace cpm {
 		 * @return The number of records modified in the repository
 		 */
 		int register_package(const Package &package);
+
+		/**
+		 * @brief Print a final message after the command has finished
+		 * 		  executing
+		 * 
+		 * @param packages a list of the previously installed packages
+		 */
+		virtual void final_message(
+			const std::unordered_set<cpm::Package, cpm::Package::Hash> &packages
+		);
 	};
 }
 
