@@ -34,7 +34,7 @@ namespace cpm {
 		InstallCommand(const std::string &name);
 
 		/**
-		 * @brief Execute the command
+		 * @brief Install cpm packages from GitHub
 		 */
 		void run() override;
 
@@ -42,7 +42,9 @@ namespace cpm {
 		protected:
 
 		/**
-		 * @brief Install the specified package and its dependencies
+		 * @brief Install the specified package and its dependencies. Before
+		 * 		  calling this command the package should be initialized using
+		 * 		  it's init() method
 		 * 
 		 * @param package the package to install
 		 * @param output_dir the output directory

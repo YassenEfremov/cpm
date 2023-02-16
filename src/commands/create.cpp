@@ -22,6 +22,6 @@ namespace cpm {
         CPMPack cpm_pack(this->context.cwd / paths::package_config);
         Package new_package = cpm_pack.create();
 
-        spdlog::info("Created package \"{}\"\n", new_package.name);
+        spdlog::info("Created package \"{}\"\n", new_package.get_name());
 	}
 }

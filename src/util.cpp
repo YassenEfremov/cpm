@@ -26,4 +26,27 @@ namespace cpm::util {
         }
         return out;
     }
+
+ 	std::vector<std::string> split_string(const std::string &str,
+								          const std::string &delim) {
+
+		std::vector<std::string> tokens;
+
+		std::string leftover = str;
+		
+		while (true) {
+			int delim_pos = leftover.find(delim);
+			if (delim_pos == std::string::npos) {
+                if (leftover.empty() && tokens.size() > 0) break;
+    			tokens.push_back(leftover);
+				break;
+			}
+			std::string next_token = leftover.substr(0, delim_pos);
+			leftover = leftover.substr(delim_pos + delim.length());
+            if (next_token.empty()) continue;
+		    tokens.push_back(next_token);
+		}
+
+		return tokens;
+	}
 }

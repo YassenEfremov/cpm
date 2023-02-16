@@ -20,7 +20,9 @@ namespace cpm {
 	 * This command parses the current cpm_pack.json and installs/removes the
 	 * package dependencies listed in there
 	 */
-	class SyncCommand : virtual public Command, public InstallCommand, public RemoveCommand {
+	class SyncCommand : virtual public Command,
+						public InstallCommand,
+						public RemoveCommand {
 
 		public:
 
@@ -41,7 +43,9 @@ namespace cpm {
 		private:
 
 		/**
-		 * @brief Install the specified package and its dependencies
+		 * @brief Install the specified package and its dependencies. Before
+		 * 		  calling this command the package should be initialized using
+		 * 		  it's init() method
 		 * 
 		 * @param package the package to install
 		 * @param output_dir the output directory
@@ -64,7 +68,7 @@ namespace cpm {
 		 * 
 		 * @param package the package to remove
 		 * 
-		 * @return The number of removed unneeded packages
+		 * @return The number of removed unspecified packages
 		 */
 		int remove_package(const Package &package) override;
 	};

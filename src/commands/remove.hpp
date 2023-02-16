@@ -31,7 +31,7 @@ namespace cpm {
 		RemoveCommand(const std::string &name);
 
 		/**
-		 * @brief Remove the specified packages
+		 * @brief Remove installed packages
 		 */
 		void run() override;
 
@@ -53,7 +53,7 @@ namespace cpm {
 		 *
 		 * @param package the package to check
 		 */
-		void check_if_not_installed(const Package &package);
+		virtual void check_if_not_installed(const Package &package);
 
 		/**
 		 * @brief Delete the specified package and its dependencies from the

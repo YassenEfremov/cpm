@@ -3,14 +3,15 @@
 #include "commands/command.hpp"
 #include "db/package_db.hpp"
 #include "package.hpp"
-#include "script/cpm_pack.hpp"
 #include "paths.hpp"
+#include "script/cpm_pack.hpp"
+#include "semver.hpp"
 
 #include "spdlog/spdlog.h"
 
 #include <filesystem>
 #include <string>
-#include <vector>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -34,12 +35,21 @@ namespace cpm {
         }
 
         spdlog::info("Packages in {}:\n", (this->context.cwd / paths::packages_dir / "").string());
-        for (const auto &p : installed_packages) {
-            if (!fs::exists(this->context.cwd / paths::packages_dir / p.name)) {
-                spdlog::info("   {} (not installed)\n", p.name);
+        for (const auto &package : installed_packages) {
+            if (!fs::exists(this->context.cwd / paths::packages_dir / package.get_name())) {
+                spdlog::info("   {}@{} (not installed)\n", package.get_name(), package.get_version().to_string());
                 
             } else {
-                spdlog::info("   {}\n", p.name);
+                spdlog::info("   {}@{}\n", package.get_name(), package.get_version().to_string());
+            }
+        }
+
+        for (const auto &dir_entry : fs::directory_iterator(this->context.cwd / paths::packages_dir / "")) {
+
+            Package package(dir_entry.path().filename().string());
+
+            if (installed_packages.find(package) == installed_packages.end()) {
+                spdlog::info("   {}@{} (unspecified)\n", package.get_name(), package.get_version().to_string());
             }
         }
 	}
