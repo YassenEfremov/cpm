@@ -55,7 +55,7 @@ namespace cpm {
 		bool is_specified();
 
 		friend bool operator<(const SemVer &lhs, const SemVer &rhs);
-		friend bool operator> (const SemVer &lhs, const SemVer &rhs);
+		friend bool operator>(const SemVer &lhs, const SemVer &rhs);
 		friend bool operator<=(const SemVer &lhs, const SemVer &rhs);
 		friend bool operator>=(const SemVer &lhs, const SemVer &rhs);
 

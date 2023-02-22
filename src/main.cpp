@@ -1,8 +1,5 @@
 #include "cli/parser.hpp"
-
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/pattern_formatter.h"
+#include "logger/logger.hpp"
 
 #include <chrono>
 #include <exception>
@@ -35,15 +32,8 @@ milliseconds time_execution(std::function<void()> command) {
 
 int main(int argc, char *argv[]) {
 
-    auto stdout_logger = spdlog::stdout_color_mt("stdout_logger");
-    stdout_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
-        "%v", spdlog::pattern_time_type::local, ""
-    ));
-    spdlog::set_default_logger(stdout_logger);
-
-    auto stderr_logger = spdlog::stderr_color_mt("stderr_logger");
-    stderr_logger->set_pattern("%^%l%$: %v");
-
+    cpm::CLILogger::init();
+    cpm::FileLogger::init();
 
     try {
         cpm::Parser::parse_args(argc, argv);
@@ -56,11 +46,11 @@ int main(int argc, char *argv[]) {
             auto command = [&]() { cpm::Parser::commands[argv[1]]->run(); };
             auto execution_time = time_execution(command);
             if (execution_time < 1000ms) {
-                spdlog::info("Finished in {}ms\n",
-                             execution_time.count());
+                CPM_INFO("Finished in {}ms\n",
+                         execution_time.count());
             } else {
-                spdlog::info("Finished in {}s\n",
-                             duration<double>(execution_time).count());
+                CPM_INFO("Finished in {}s\n",
+                         duration<double>(execution_time).count());
             }
 
         } else {
@@ -70,10 +60,11 @@ int main(int argc, char *argv[]) {
     } catch (const std::exception &e) {
         if (argc < 2) {
             // Used to print usage (not formatted as an error)
-            spdlog::get("stdout_logger")->error(e.what());
+            CPM_INFO(e.what());
 
         } else {
-            spdlog::get("stderr_logger")->error(e.what());
+            CPM_LOG_ERR(e.what());
+            CPM_ERR(e.what());
         }
         return EXIT_FAILURE;
     }

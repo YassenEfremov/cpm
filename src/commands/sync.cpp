@@ -3,13 +3,12 @@
 #include "commands/command.hpp"
 #include "commands/install.hpp"
 #include "commands/remove.hpp"
+#include "logger/logger.hpp"
 #include "package.hpp"
 #include "paths.hpp"
 #include "script/cpm_pack.hpp"
 #include "semver.hpp"
 #include "util.hpp"
-
-#include "spdlog/spdlog.h"
 
 #include <exception>
 #include <filesystem>
@@ -28,20 +27,31 @@ namespace cpm {
 
     void SyncCommand::run() {
 
+        CPM_LOG_INFO(">>>>> Starting sync command >>>>>");
+
         CPMPack cpm_pack(fs::current_path() / paths::package_config);
         auto packages = cpm_pack.list();
+        CPM_LOG_INFO("New packages in {}: {}",paths::package_config.string(),
+            [&]() {
+                std::string packages_str = "[";
+                for (const auto &p : packages) {
+                    packages_str += p.get_name() + ", ";
+                }
+                return packages_str + "]";
+            }()
+        );
 
-        spdlog::info("Synchronizing packages with {} ...\n", paths::package_config.string());
+        CPM_INFO("Synchronizing packages with {} ...\n", paths::package_config.string());
 
         for (auto package : packages) {
-            spdlog::info("Checking package {}@{} ...", package.get_name(), package.get_version().to_string());
+            CPM_INFO("Checking package {}@{} ...", package.get_name(), package.get_version().to_string());
             try {
                 package.init();
             } catch(const std::exception &e) {
-                spdlog::info(" not found!\n");
+                CPM_INFO(" not found!\n");
                 throw std::invalid_argument(e.what());
             }
-            spdlog::info(" done.\n");
+            CPM_INFO(" done.\n");
         }
 
         int new_packages = 0;
@@ -52,7 +62,7 @@ namespace cpm {
                 );
             
             } catch(const std::exception &e) {
-                spdlog::get("stderr_logger")->error(e.what());
+                CPM_ERR(e.what());
             }
         }
 
@@ -62,15 +72,18 @@ namespace cpm {
             Package package(dir_entry.path().filename().string());
 
             if (packages.find(package) == packages.end()) {
+                CPM_LOG_INFO("Found unspecified package {}, removing", package.get_name());
                 unspecified_packages += this->remove_package(package);
             }
         }
 
-        spdlog::info(
+        CPM_INFO(
             "Syncronization complete.\n"
             "Installed {} new, removed {} unspecified\n",
             new_packages, unspecified_packages
         );
+
+        CPM_LOG_INFO(">>>>> Finished sync. >>>>>");
 
         this->final_message(packages);
 	}
@@ -81,11 +94,11 @@ namespace cpm {
         try {
             this->check_if_installed(package);
         } catch(const std::exception &e) {
-            spdlog::info("{}\n", e.what());
+            CPM_INFO("{}\n", e.what());
             return 0;
         }
         
-        spdlog::info(
+        CPM_INFO(
             "{}@{}: Installing into {} ...\n", package.get_name(), package.get_version().to_string(),
             (output_dir / package.get_name() / "").string()
         );
@@ -103,10 +116,10 @@ namespace cpm {
 
 	int SyncCommand::remove_package(const Package &package) {
 
-        spdlog::info("{}: Not specified, removing ...\n", package.get_name());
+        CPM_INFO("{}: Not specified, removing ...\n", package.get_name());
         
         std::uintmax_t n = this->delete_package(package);
-        spdlog::info("    Removed {} entries\n", n);
+        CPM_INFO("    Removed {} entries\n", n);
 
         return 1;
     }

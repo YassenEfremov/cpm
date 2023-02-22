@@ -2,13 +2,12 @@
 
 #include "commands/command.hpp"
 #include "db/package_db.hpp"
+#include "logger/logger.hpp"
 #include "package.hpp"
 #include "paths.hpp"
 #include "script/cpm_pack.hpp"
 #include "semver.hpp"
 #include "util.hpp"
-
-#include "spdlog/spdlog.h"
 
 #include <exception>
 #include <filesystem>
@@ -28,6 +27,17 @@ namespace cpm {
 
     void RemoveCommand::run() {
 
+        CPM_LOG_INFO(
+            ">>>>> Starting remove command with args: {} >>>>>",
+            [&]() {
+                std::string packages_str = "[";
+                for (const auto &p : this->get<std::vector<std::string>>("packages")) {
+                    packages_str += p + ", ";
+                }
+                return packages_str + "]";
+            }()
+        );
+
         auto packages_str = this->get<std::vector<std::string>>("packages");
         std::unordered_set<Package, Package::Hash> packages;
         for (const auto &package_str : packages_str) {
@@ -40,26 +50,28 @@ namespace cpm {
                 records_modified += this->remove_package(package);
 
             } catch(const std::exception &e) {
-                spdlog::get("stderr_logger")->error(e.what());
+                CPM_ERR(e.what());
             }
         }
 
-        spdlog::info(
+        CPM_INFO(
             "{}: modified {} record/s\n",
             this->context.repo->get_filename().filename().string(), records_modified
         );
+
+        CPM_LOG_INFO("<<<<< Finished remove. <<<<<");
     }
 
     int RemoveCommand::remove_package(const Package &package) {
 
         this->check_if_not_installed(package);
-        spdlog::info(
+        CPM_INFO(
             "Removing package from {} ...\n",
             (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
         );
 
         std::uintmax_t n = this->delete_package(package);
-        spdlog::info("Removed {} entries\n", n);
+        CPM_INFO(" \x1b[31m-\x1b[37m Removed {} entries\n", n);
 
         return this->unregister_package(package);
     }

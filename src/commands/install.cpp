@@ -2,6 +2,7 @@
 
 #include "commands/command.hpp"
 #include "db/package_db.hpp"
+#include "logger/logger.hpp"
 #include "package.hpp"
 #include "paths.hpp"
 #include "script/cpm_pack.hpp"
@@ -10,7 +11,6 @@
 
 #include "cpr/cpr.h"
 #include "nlohmann/json.hpp"
-#include "spdlog/spdlog.h"
 
 extern "C" {
     #include "zip.h"
@@ -19,6 +19,8 @@ extern "C" {
 #include <exception>
 #include <filesystem>
 #include <functional>
+#include <iomanip>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -37,32 +39,51 @@ namespace cpm {
 
 	void InstallCommand::run() {
 
+        CPM_LOG_INFO(
+            ">>>>> Starting install command with args: {} >>>>>",
+            [&]() {
+                std::string packages_str = "[";
+                for (const auto &p : this->get<std::vector<std::string>>("packages")) {
+                    packages_str += p + ", ";
+                }
+                return packages_str + "]";
+            }()
+        );
+
         auto packages_str = this->get<std::vector<std::string>>("packages");
         std::unordered_set<Package, Package::Hash> packages;
         for (const auto &package_str : packages_str) {
             auto tokens = util::split_string(package_str, "@");
             if (tokens.size() == 2) {
-                spdlog::info("Checking package {}@{} ...", tokens[0], tokens[1]);
+                CPM_INFO("Checking package {}@{} ...", tokens[0], tokens[1]);
                 Package new_package(tokens[0], SemVer(tokens[1]));
                 try {
                     new_package.init();
                 } catch(const std::exception &e) {
-                    spdlog::info(" failed!\n");
+                    CPM_INFO(" failed!\n");
                     throw std::invalid_argument(e.what());
                 }
-                spdlog::info(" done.\n");
+                CPM_LOG_INFO(
+                    "version {} for package {} is valid",
+                    new_package.get_version().to_string(), new_package.get_name()
+                );
+                CPM_INFO(" done.\n");
                 packages.insert(new_package);
 
             } else if (tokens.size() == 1) {
-                spdlog::info("Resolving version for package {} ...", tokens[0]);
+                CPM_INFO("Resolving version for package {} ...", tokens[0]);
                 Package new_package(tokens[0]);
                 try {
                     new_package.init();
                 } catch(const std::exception &e) {
-                    spdlog::info(" failed!\n");
+                    CPM_INFO(" failed!\n");
                     throw std::invalid_argument(e.what());
                 }
-                spdlog::info(" found latest: {}\n", new_package.get_version().to_string());
+                CPM_LOG_INFO(
+                    "found version {} (latest) for package {}",
+                    new_package.get_version().to_string(), new_package.get_name()
+                );
+                CPM_INFO(" found latest: \x1b[33m{}\x1b[37m\n", new_package.get_version().to_string());
                 packages.insert(new_package);
 
             } else {
@@ -78,14 +99,17 @@ namespace cpm {
                 );
             
             } catch(const std::exception &e) {
-                spdlog::get("stderr_logger")->error(e.what());
+                CPM_LOG_INFO(e.what());
+                CPM_ERR(e.what());
             }
         }
 
-        spdlog::info(
+        CPM_INFO(
             "{}: modified {} record/s\n",
             this->context.repo->get_filename().filename().string(), records_modified
         );
+
+        CPM_LOG_INFO("<<<<< Finished install. <<<<<");
 
         this->final_message(packages);
     }
@@ -95,7 +119,7 @@ namespace cpm {
 
         this->check_if_installed(package);
 
-        spdlog::info(
+        CPM_INFO(
             "Installing package into {} ...\n",
             (output_dir / package.get_name() / "").string()
         );
@@ -115,6 +139,7 @@ namespace cpm {
     }
 
 	void InstallCommand::install_deps(const Package &package, const fs::path &output_dir) {
+        CPM_INFO(" \x1b[34mv\x1b[37m Downloading repository\n");
         cpr::Response response = this->download_package(package,
             [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
                 cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
@@ -125,13 +150,13 @@ namespace cpm {
                     downloaded /= 1000000;
                     total /= 1000000;
                     unit = "MB";
-                    spdlog::info("\r                                                        ");
+                    std::cout << std::setw(60) << "\r";
 
                 } else if (downloadNow >= 1000) {
                     downloaded /= 1000;
                     total /= 1000;
                     unit = "KB";
-                    spdlog::info("\r                                                        ");
+                    std::cout << std::setw(60) << "\r";
                 }
                 if (total < downloaded) {
                     total = downloaded;
@@ -145,13 +170,18 @@ namespace cpm {
         this->extract_package(
             response.text, output_dir / package.get_name(),
             [](int currentEntry, int totalEntries) {
-                spdlog::info("\r    Extracting archive entries {}/{}", currentEntry, totalEntries);
+                std::cout << "\r \x1b[32m+\x1b[37m Extracting archive entries " << currentEntry << "/" << totalEntries;
                 return true;
             }
         );
-        spdlog::info(" done.\n");
+        std::cout << " done.\n";
+        CPM_LOG_INFO("extracted package {}", package.get_name());
 
         for (const auto &dep : *package.get_dependencies()) {
+            CPM_LOG_INFO(
+                "installing dependency of {}: {}",
+                package.get_name(), dep.get_name()
+            );
             this->install_deps(dep, output_dir / package.get_name() / paths::packages_dir / "");
         }
     }
@@ -164,16 +194,26 @@ namespace cpm {
             std::intptr_t userdata
         )> download_progress
     ) {
+        CPM_LOG_INFO(
+            "HEAD https://api.github.com/repos/.../{}/zipball/{}",
+            package.get_name(), package.get_version().to_string()
+        );
         cpr::Response res = cpr::Head(
-            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() / "zipball" / package.get_version().to_string()).string()}
+            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() /
+                     "zipball" / package.get_version().to_string()).string()}
         );
 
         if (res.status_code != cpr::status::HTTP_OK) {
             throw std::invalid_argument(package.get_name() + ": package not found!");
         }
 
+        CPM_LOG_INFO(
+            "GET https://api.github.com/repos/.../{}/zipball/{}",
+            package.get_name(), package.get_version().to_string()
+        );
         res = cpr::Get(
-            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() / "zipball" / package.get_version().to_string()).string()},
+            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() /
+                     "zipball" / package.get_version().to_string()).string()},
             cpr::ProgressCallback(download_progress)
         );
 
@@ -211,40 +251,43 @@ namespace cpm {
 	void InstallCommand::final_message(
         const std::unordered_set<cpm::Package, cpm::Package::Hash> &packages
     ) {
-        spdlog::info("\nTo use the package/s add the following commands to your CMakeLists.txt:\n");
+        CPM_INFO("\x1b[33m"
+            "\n"
+            "**Hint**\n"
+            "To use the package/s add the following commands to your CMakeLists.txt:\n"
+        );
         for (const auto &package : packages) {
-            spdlog::info("    add_subdirectory(lib/{})\n", package.get_name());
+            CPM_INFO("    add_subdirectory(lib/{})\n", package.get_name());
         }
 
-        spdlog::info(
+        CPM_INFO(
             "\n"
             "    target_include_directories(<target>\n"
             "       PRIVATE\n"
         );
         for (const auto &package : packages) {
-            spdlog::info(
+            CPM_INFO(
                 "            ${{CMAKE_CURRENT_SOURCE_DIR}}/lib/{}/include\n",
                 package.get_name()
             );
         }
-        spdlog::info(
+        CPM_INFO(
             "    )\n"
             "\n"
         );
 
-        spdlog::info(
+        CPM_INFO(
             "    target_link_libraries(<target>\n"
             "       PRIVATE\n"
         );
         for (const auto &package : packages) {
-            spdlog::info(
-                "            {}\n",
-                package.get_name()
+            CPM_INFO(
+                "            {}\n", package.get_name()
             );
         }
-        spdlog::info(
+        CPM_INFO(
             "    )\n"
-            "\n"
+            "\x1b[37m\n"
         );
     }
 }
