@@ -161,11 +161,23 @@ namespace cpm {
                 if (total < downloaded) {
                     total = downloaded;
                 }
-                spdlog::info("\r    Downloading repository {0:.2f}/{1:.2f} {2}", downloaded, total, unit);
+                std::cout << "\r   [";
+                for (int i = 0; i < 10; i++) {
+                    if (i == static_cast<int>(downloaded) % 10) {
+                        std::cout << "#";
+                    } else {
+                        std::cout << " ";
+                    }
+                }
+                std::cout << "] " << downloaded << " " << unit << std::flush;
                 return true;
             }
         );
-        spdlog::info(" done.\n");
+        std::cout << "\r   [   done   ]\n";
+        CPM_LOG_INFO(
+            "downloaded package {}, total: {} {}",
+            package.get_name(), response.text.size() / 1000, "KB"
+        );
 
         this->extract_package(
             response.text, output_dir / package.get_name(),
