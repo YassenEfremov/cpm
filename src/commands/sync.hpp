@@ -60,8 +60,10 @@ namespace cpm {
 		 * 		  installation
 		 *
 		 * @param package the package to check
+		 * 
+		 * @return true if installed, false otherwise
 		 */
-		void check_if_installed(const Package &package) override;
+		bool check_if_installed(const Package &package) override;
 
 		/**
 		 * @brief Remove the specified package and its dependencies

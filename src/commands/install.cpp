@@ -99,7 +99,7 @@ namespace cpm {
                 );
             
             } catch(const std::exception &e) {
-                CPM_LOG_INFO(e.what());
+                CPM_LOG_ERR(e.what());
                 CPM_ERR(e.what());
             }
         }
@@ -117,7 +117,9 @@ namespace cpm {
 	int InstallCommand::install_package(const Package &package,
                                         const fs::path &output_dir) {
 
-        this->check_if_installed(package);
+        if (this->check_if_installed(package)) {
+            throw std::invalid_argument(package.get_name() + ": package already installed!");
+        }
 
         CPM_INFO(
             "Installing package into {} ...\n",
@@ -129,16 +131,24 @@ namespace cpm {
         return this->register_package(package);
     }
 
-    void InstallCommand::check_if_installed(const Package &package) {
+    bool InstallCommand::check_if_installed(const Package &package) {
         bool specified = this->context.repo->contains(package);
         bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
 
-        if (specified && installed) {
-            throw std::invalid_argument(package.get_name() + ": package already installed!");
-        }
+        return specified && installed;
     }
 
 	void InstallCommand::install_deps(const Package &package, const fs::path &output_dir) {
+        for (const auto &dep : *package.get_dependencies()) {
+            if (!this->check_if_installed(dep)) {
+                this->install_deps(dep, output_dir / package.get_name() / paths::packages_dir / "");
+            }
+            CPM_LOG_INFO(
+                "installed dependency of {}: {}",
+                package.get_name(), dep.get_name()
+            );
+        }
+
         CPM_INFO(" \x1b[34mv\x1b[37m Downloading repository\n");
         cpr::Response response = this->download_package(package,
             [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
@@ -180,7 +190,7 @@ namespace cpm {
         );
 
         this->extract_package(
-            response.text, output_dir / package.get_name(),
+            response.text, this->context.cwd / paths::packages_dir / package.get_name(),
             [](int currentEntry, int totalEntries) {
                 std::cout << "\r \x1b[32m+\x1b[37m Extracting archive entries " << currentEntry << "/" << totalEntries;
                 return true;
@@ -190,11 +200,12 @@ namespace cpm {
         CPM_LOG_INFO("extracted package {}", package.get_name());
 
         for (const auto &dep : *package.get_dependencies()) {
-            CPM_LOG_INFO(
-                "installing dependency of {}: {}",
-                package.get_name(), dep.get_name()
+            fs::create_directory(output_dir / package.get_name() / paths::packages_dir);
+            fs::create_directory_symlink(
+                this->context.cwd / paths::packages_dir / dep.get_name(),
+                output_dir / package.get_name() / paths::packages_dir / dep.get_name()
             );
-            this->install_deps(dep, output_dir / package.get_name() / paths::packages_dir / "");
+            CPM_LOG_INFO("created symlink to {}", dep.get_name());
         }
     }
 
@@ -263,13 +274,21 @@ namespace cpm {
 	void InstallCommand::final_message(
         const std::unordered_set<cpm::Package, cpm::Package::Hash> &packages
     ) {
+        fs::path prefix = "${CMAKE_CURRENT_SOURCE_DIR}";
+        if (this->context.cwd != fs::current_path()) {
+            prefix = paths::global_dir;
+        }
+
         CPM_INFO("\x1b[33m"
             "\n"
             "**Hint**\n"
             "To use the package/s add the following commands to your CMakeLists.txt:\n"
         );
         for (const auto &package : packages) {
-            CPM_INFO("    add_subdirectory(lib/{})\n", package.get_name());
+            CPM_INFO(
+                "    add_subdirectory({}/lib/{})\n",
+                prefix.string(), package.get_name()
+            );
         }
 
         CPM_INFO(
@@ -279,8 +298,8 @@ namespace cpm {
         );
         for (const auto &package : packages) {
             CPM_INFO(
-                "            ${{CMAKE_CURRENT_SOURCE_DIR}}/lib/{}/include\n",
-                package.get_name()
+                "            {}/lib/{}/include\n",
+                prefix.string(), package.get_name()
             );
         }
         CPM_INFO(
@@ -299,7 +318,8 @@ namespace cpm {
         }
         CPM_INFO(
             "    )\n"
-            "\x1b[37m\n"
+            "\n"
+            "\x1b[37m"
         );
     }
 }

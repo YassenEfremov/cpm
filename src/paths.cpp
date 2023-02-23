@@ -1,9 +1,9 @@
 #include "paths.hpp"
 
-#include <cstdlib>
-
 #include <filesystem>
 #include <string>
+
+#include <cstdlib>
 
 namespace fs = std::filesystem;
 

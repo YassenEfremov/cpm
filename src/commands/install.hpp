@@ -59,15 +59,17 @@ namespace cpm {
 		 * 		  installation
 		 *
 		 * @param package the package to check
+		 * 
+		 * @return true if installed, false otherwise
 		 */
-		virtual void check_if_installed(const Package &package);
+		virtual bool check_if_installed(const Package &package);
 
 		/**
 		 * @brief Install the specified package and its dependencies
 		 * 		  recursively
 		 * 
 		 * @param package the package to install
-		 * @param output_dir the output directory
+		 * @param output_dir the directory in which to install the package
 		 */
 		void install_deps(const Package &package, const fs::path &output_dir);
 
