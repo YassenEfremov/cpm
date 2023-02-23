@@ -47,12 +47,14 @@ namespace cpm {
             }
         }
 
-        for (const auto &dir_entry : fs::directory_iterator(this->context.cwd / paths::packages_dir / "")) {
+        if (fs::exists(this->context.cwd / paths::packages_dir / "")) {
+            for (const auto &dir_entry : fs::directory_iterator(this->context.cwd / paths::packages_dir / "")) {
 
-            Package package(dir_entry.path().filename().string());
+                Package package(dir_entry.path().filename().string());
 
-            if (installed_packages.find(package) == installed_packages.end()) {
-                CPM_INFO("   {}@{} (unspecified)\n", package.get_name(), package.get_version().to_string());
+                if (installed_packages.find(package) == installed_packages.end()) {
+                    CPM_INFO("   {}@{} (unspecified)\n", package.get_name(), package.get_version().to_string());
+                }
             }
         }
 

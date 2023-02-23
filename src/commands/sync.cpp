@@ -91,10 +91,8 @@ namespace cpm {
     int SyncCommand::install_package(const Package &package,
                                      const fs::path &output_dir) {
 
-        try {
-            this->check_if_installed(package);
-        } catch(const std::exception &e) {
-            CPM_INFO("{}\n", e.what());
+        if (this->check_if_installed(package)) {
+            CPM_INFO(package.get_name() + ": Already installed, skipping ...");
             return 0;
         }
         
@@ -108,10 +106,8 @@ namespace cpm {
         return 1;
     }
 
-	void SyncCommand::check_if_installed(const Package &package) {
-        if (fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "")) {
-            throw std::invalid_argument(package.get_name() + ": Already installed, skipping ...");
-        }
+	bool SyncCommand::check_if_installed(const Package &package) {
+        return fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
     }
 
 	int SyncCommand::remove_package(const Package &package) {
