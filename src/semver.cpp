@@ -24,7 +24,23 @@ namespace cpm {
 		this->suffix = "";
 	}
 
-	std::string SemVer::to_string() const {
+	int SemVer::get_major() const {
+		return this->major;
+	}
+
+	int SemVer::get_minor() const {
+		return this->minor;
+	}
+
+	int SemVer::get_patch() const {
+		return this->patch;
+	}
+
+	std::string SemVer::get_suffix() const {
+		return this->suffix;
+	}
+
+	std::string SemVer::string() const {
 		std::string str = std::to_string(this->major) + "." +
 			   			  std::to_string(this->minor) + "." +
 			   			  std::to_string(this->patch);
@@ -36,7 +52,7 @@ namespace cpm {
 	}
 
 	bool SemVer::is_specified() {
-		return this->to_string() != "0.0.0";
+		return this->string() != "0.0.0";
 	}
 
 	bool operator<(const SemVer& l, const SemVer& r) {

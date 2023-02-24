@@ -18,7 +18,7 @@ namespace cpm {
 	/**
 	 * @brief A class representing the cpm_pack.json
 	 */
-	class CPMPack : public Repository<Package, Package::Hash> {
+	class PackageConfig : public Repository<Package, Package::Hash> {
 
 		public:
 
@@ -27,7 +27,7 @@ namespace cpm {
 		 * 
 		 * @param filename the name of the cpm_pack.json file
 		 */
-		CPMPack(const fs::path &filename);
+		PackageConfig(const fs::path &filename);
 
 		/**
 		 * @brief Add the specified package/s to the cpm_pack.json file

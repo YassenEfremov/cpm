@@ -5,7 +5,7 @@
 #include "logger/logger.hpp"
 #include "package.hpp"
 #include "paths.hpp"
-#include "script/cpm_pack.hpp"
+#include "script/package_config.hpp"
 #include "semver.hpp"
 #include "util.hpp"
 
@@ -39,22 +39,21 @@ namespace cpm {
 
 	void InstallCommand::run() {
 
-        CPM_LOG_INFO(
-            ">>>>> Starting install command with args: {} >>>>>",
-            [&]() {
-                std::string packages_str = "[";
-                for (const auto &p : this->get<std::vector<std::string>>("packages")) {
-                    packages_str += p + ", ";
-                }
-                return packages_str + "]";
-            }()
-        );
+        CPM_LOG_INFO("===== Starting install command =====");
 
         auto packages_str = this->get<std::vector<std::string>>("packages");
+        CPM_LOG_INFO("args: {}", [&]() {
+            std::string args = "[";
+            for (const auto &arg : packages_str) {
+                args += arg + ", ";
+            }
+            return args + "]";
+        }());
         std::unordered_set<Package, Package::Hash> packages;
         for (const auto &package_str : packages_str) {
             auto tokens = util::split_string(package_str, "@");
             if (tokens.size() == 2) {
+                CPM_LOG_INFO("Checking package {}@{} ...", tokens[0], tokens[1]);
                 CPM_INFO("Checking package {}@{} ...", tokens[0], tokens[1]);
                 Package new_package(tokens[0], SemVer(tokens[1]));
                 try {
@@ -65,12 +64,13 @@ namespace cpm {
                 }
                 CPM_LOG_INFO(
                     "version {} for package {} is valid",
-                    new_package.get_version().to_string(), new_package.get_name()
+                    new_package.get_version().string(), new_package.get_name()
                 );
-                CPM_INFO(" done.\n");
+                CPM_INFO(" found.\n");
                 packages.insert(new_package);
 
             } else if (tokens.size() == 1) {
+                CPM_LOG_INFO("Resolving version for package {} ...", tokens[0]);
                 CPM_INFO("Resolving version for package {} ...", tokens[0]);
                 Package new_package(tokens[0]);
                 try {
@@ -81,9 +81,9 @@ namespace cpm {
                 }
                 CPM_LOG_INFO(
                     "found version {} (latest) for package {}",
-                    new_package.get_version().to_string(), new_package.get_name()
+                    new_package.get_version().string(), new_package.get_name()
                 );
-                CPM_INFO(" found latest: \x1b[33m{}\x1b[37m\n", new_package.get_version().to_string());
+                CPM_INFO(" found latest: \x1b[33m{}\x1b[37m\n", new_package.get_version().string());
                 packages.insert(new_package);
 
             } else {
@@ -109,7 +109,7 @@ namespace cpm {
             this->context.repo->get_filename().filename().string(), records_modified
         );
 
-        CPM_LOG_INFO("<<<<< Finished install. <<<<<");
+        CPM_LOG_INFO("===== Finished install command. =====");
 
         this->final_message(packages);
     }
@@ -117,6 +117,7 @@ namespace cpm {
 	int InstallCommand::install_package(const Package &package,
                                         const fs::path &output_dir) {
 
+        CPM_LOG_INFO("Checking if package {} is already installed ...", package.get_name());
         if (this->check_if_installed(package)) {
             throw std::invalid_argument(package.get_name() + ": package already installed!");
         }
@@ -126,8 +127,13 @@ namespace cpm {
             (output_dir / package.get_name() / "").string()
         );
 
+        CPM_LOG_INFO(
+            "Installing package into {} ...",
+            (output_dir / package.get_name() / "").string()
+        );
         this->install_deps(package, output_dir);
 
+        CPM_LOG_INFO("Adding package to {} ...", paths::package_config.string());
         return this->register_package(package);
     }
 
@@ -140,15 +146,15 @@ namespace cpm {
 
 	void InstallCommand::install_deps(const Package &package, const fs::path &output_dir) {
         for (const auto &dep : *package.get_dependencies()) {
+            CPM_LOG_INFO(
+                "installing dependency of {}: {}", package.get_name(), dep.get_name()
+            );
             if (!this->check_if_installed(dep)) {
                 this->install_deps(dep, output_dir / package.get_name() / paths::packages_dir / "");
             }
-            CPM_LOG_INFO(
-                "installed dependency of {}: {}",
-                package.get_name(), dep.get_name()
-            );
         }
 
+        CPM_LOG_INFO("downloading package {} ...", package.get_name());
         CPM_INFO(" \x1b[34mv\x1b[37m Downloading repository\n");
         cpr::Response response = this->download_package(package,
             [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
@@ -183,12 +189,12 @@ namespace cpm {
                 return true;
             }
         );
-        std::cout << "\r   [   done   ]\n";
         CPM_LOG_INFO(
-            "downloaded package {}, total: {} {}",
-            package.get_name(), response.text.size() / 1000, "KB"
+            "download complete, total: {} {}", response.text.size() / 1000, "KB"
         );
+        std::cout << "\r   [   done   ]\n";
 
+        CPM_LOG_INFO("extracting package {} ...", package.get_name());
         this->extract_package(
             response.text, this->context.cwd / paths::packages_dir / package.get_name(),
             [](int currentEntry, int totalEntries) {
@@ -196,16 +202,17 @@ namespace cpm {
                 return true;
             }
         );
+        CPM_LOG_INFO("extract complete");
         std::cout << " done.\n";
-        CPM_LOG_INFO("extracted package {}", package.get_name());
 
         for (const auto &dep : *package.get_dependencies()) {
+            CPM_LOG_INFO("creating symlink to {} ...", dep.get_name());
             fs::create_directory(output_dir / package.get_name() / paths::packages_dir);
             fs::create_directory_symlink(
                 this->context.cwd / paths::packages_dir / dep.get_name(),
                 output_dir / package.get_name() / paths::packages_dir / dep.get_name()
             );
-            CPM_LOG_INFO("created symlink to {}", dep.get_name());
+            CPM_LOG_INFO("symlink created");
         }
     }
 
@@ -218,27 +225,29 @@ namespace cpm {
         )> download_progress
     ) {
         CPM_LOG_INFO(
-            "HEAD https://api.github.com/repos/.../{}/zipball/{}",
-            package.get_name(), package.get_version().to_string()
+            "HEAD {}/.../{}/zipball/{}",
+            paths::api_url.string(), package.get_name(), package.get_version().string()
         );
         cpr::Response res = cpr::Head(
             cpr::Url{(paths::api_url / paths::owner_name / package.get_name() /
-                     "zipball" / package.get_version().to_string()).string()}
+                     "zipball" / package.get_version().string()).string()}
         );
+        CPM_LOG_INFO("Response status: {}", res.status_code);
 
         if (res.status_code != cpr::status::HTTP_OK) {
             throw std::invalid_argument(package.get_name() + ": package not found!");
         }
 
         CPM_LOG_INFO(
-            "GET https://api.github.com/repos/.../{}/zipball/{}",
-            package.get_name(), package.get_version().to_string()
+            "GET {}/.../{}/zipball/{}",
+            paths::api_url.string(), package.get_name(), package.get_version().string()
         );
         res = cpr::Get(
             cpr::Url{(paths::api_url / paths::owner_name / package.get_name() /
-                     "zipball" / package.get_version().to_string()).string()},
+                     "zipball" / package.get_version().string()).string()},
             cpr::ProgressCallback(download_progress)
         );
+        CPM_LOG_INFO("Response status: {}", res.status_code);
 
         return res;
 	}
@@ -250,10 +259,12 @@ namespace cpm {
         struct zip_t *zip = zip_stream_open(stream.c_str(), stream.size(), 0, 'r');
 
         std::size_t n = zip_entries_total(zip);
+        CPM_LOG_INFO("Total entries to extract: {}", n);
         for (int i = 0; i < n; i++) {
             zip_entry_openbyindex(zip, i);
 
             std::string entry_name = zip_entry_name(zip);
+            CPM_LOG_INFO("extracting {} ...", entry_name);
             std::size_t first_slash = entry_name.find_first_of('/');
             if (zip_entry_isdir(zip)) {
                 fs::create_directories(output_dir / entry_name.substr(first_slash + 1));

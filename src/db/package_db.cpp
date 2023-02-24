@@ -52,7 +52,7 @@ namespace cpm {
 		, -1, &stmt, nullptr);
 		
 		sqlite3_bind_text(stmt, 1, package.get_name().c_str(), package.get_name().length(), SQLITE_TRANSIENT);
-		sqlite3_bind_text(stmt, 2, package.get_version().to_string().c_str(), package.get_version().to_string().length(), SQLITE_TRANSIENT);
+		sqlite3_bind_text(stmt, 2, package.get_version().string().c_str(), package.get_version().string().length(), SQLITE_TRANSIENT);
 		sqlite3_step(stmt);
 		int rows_modified = sqlite3_total_changes(this->package_db);
 
