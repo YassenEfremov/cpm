@@ -8,7 +8,7 @@
 #include "commands/sync.hpp"
 #include "db/package_db.hpp"
 #include "paths.hpp"
-#include "script/cpm_pack.hpp"
+#include "script/package_config.hpp"
 #include "version.hpp"
 
 #include "argparse/argparse.hpp"
@@ -35,7 +35,7 @@ namespace cpm {
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
         install_command.add_argument("-g", "--global")
-            .help("installs package/s globally")
+            .help("install package/s globally")
             .default_value(false)
             .implicit_value(true);
 
@@ -47,15 +47,19 @@ namespace cpm {
             .required()
             .nargs(argparse::nargs_pattern::at_least_one);
         remove_command.add_argument("-g", "--global")
-            .help("removes package/s globally")
+            .help("remove package/s globally")
             .default_value(false)
             .implicit_value(true);
 
 
         static ListCommand list_command("list");
-        list_command.add_description("List all installed packages");
+        list_command.add_description("List installed packages");
         list_command.add_argument("-g", "--global")
-            .help("lists globally installed package/s")
+            .help("list globally installed package/s")
+            .default_value(false)
+            .implicit_value(true);
+        list_command.add_argument("-a", "--all")
+            .help("list all packages, including dependencies")
             .default_value(false)
             .implicit_value(true);
 
@@ -112,7 +116,7 @@ namespace cpm {
         } catch(const std::exception &e) {
             commands[argv[1]]->context = CommandContext{
                 fs::current_path(),
-                std::make_unique<CPMPack>(
+                std::make_unique<PackageConfig>(
                     fs::current_path() / paths::package_config
                 )
             };

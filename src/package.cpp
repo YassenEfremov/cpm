@@ -44,6 +44,10 @@ namespace cpm {
 		return this->dependencies;
 	}
 
+	std::string Package::string() const {
+		return this->name + "@" + this->version.string();
+	}
+
 	void Package::init() {
 		if (!this->version.is_specified()) {
 			cpr::Response res = cpr::Get(
@@ -65,10 +69,10 @@ namespace cpm {
 
 		} else {
 			cpr::Response res = cpr::Head(
-				cpr::Url{(paths::api_url / paths::owner_name / this->name / "zipball" / this->version.to_string()).string()}
+				cpr::Url{(paths::api_url / paths::owner_name / this->name / "zipball" / this->version.string()).string()}
 			);
 			if (res.status_code != cpr::status::HTTP_OK) {
-				throw std::invalid_argument(this->name + ": version " + this->version.to_string() + " not found!");
+				throw std::invalid_argument(this->name + ": version " + this->version.string() + " not found!");
 			}
 		}
 

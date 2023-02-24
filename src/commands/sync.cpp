@@ -6,7 +6,7 @@
 #include "logger/logger.hpp"
 #include "package.hpp"
 #include "paths.hpp"
-#include "script/cpm_pack.hpp"
+#include "script/package_config.hpp"
 #include "semver.hpp"
 #include "util.hpp"
 
@@ -27,11 +27,12 @@ namespace cpm {
 
     void SyncCommand::run() {
 
-        CPM_LOG_INFO(">>>>> Starting sync command >>>>>");
+        CPM_LOG_INFO("===== Starting sync command =====");
 
-        CPMPack cpm_pack(fs::current_path() / paths::package_config);
+        CPM_LOG_INFO("Obtaining new packages from {} ...",paths::package_config.string());
+        PackageConfig cpm_pack(fs::current_path() / paths::package_config);
         auto packages = cpm_pack.list();
-        CPM_LOG_INFO("New packages in {}: {}",paths::package_config.string(),
+        CPM_LOG_INFO("New packages in {}: {}", paths::package_config.string(),
             [&]() {
                 std::string packages_str = "[";
                 for (const auto &p : packages) {
@@ -43,17 +44,24 @@ namespace cpm {
 
         CPM_INFO("Synchronizing packages with {} ...\n", paths::package_config.string());
 
+        CPM_LOG_INFO("Initializing new packages ...",paths::package_config.string());
         for (auto package : packages) {
-            CPM_INFO("Checking package {}@{} ...", package.get_name(), package.get_version().to_string());
+            CPM_LOG_INFO("Checking package {} ...", package.string());
+            CPM_INFO("Checking package {} ...", package.string());
             try {
                 package.init();
             } catch(const std::exception &e) {
-                CPM_INFO(" not found!\n");
+                CPM_INFO(" failed!\n");
                 throw std::invalid_argument(e.what());
             }
-            CPM_INFO(" done.\n");
+            CPM_LOG_INFO(
+                "version {} for package {} is valid",
+                package.get_version().string(), package.get_name()
+            );
+            CPM_INFO(" found.\n");
         }
 
+        CPM_LOG_INFO("Installing new packages ...",paths::package_config.string());
         int new_packages = 0;
         for (auto package : packages) {
             try {
@@ -62,10 +70,12 @@ namespace cpm {
                 );
             
             } catch(const std::exception &e) {
+                CPM_LOG_ERR(e.what());
                 CPM_ERR(e.what());
             }
         }
 
+        CPM_LOG_INFO("Removing unspecified packages ...", paths::package_config.string());
         int unspecified_packages = 0;
         for (const auto &dir_entry : fs::directory_iterator(this->context.cwd / paths::packages_dir / "")) {
 
@@ -83,7 +93,7 @@ namespace cpm {
             new_packages, unspecified_packages
         );
 
-        CPM_LOG_INFO(">>>>> Finished sync. >>>>>");
+        CPM_LOG_INFO("===== Finished sync. =====");
 
         this->final_message(packages);
 	}
@@ -97,7 +107,7 @@ namespace cpm {
         }
         
         CPM_INFO(
-            "{}@{}: Installing into {} ...\n", package.get_name(), package.get_version().to_string(),
+            "{}: Installing into {} ...\n", package.string(),
             (output_dir / package.get_name() / "").string()
         );
 

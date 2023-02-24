@@ -61,6 +61,13 @@ namespace cpm {
 		get_dependencies() const;
 
 		/**
+		 * @brief Get the package as a string
+		 * 
+		 * @return The package as a string
+		 */
+		std::string string() const;
+
+		/**
 		 * @brief Initialize the package's dependencies and it's other fields
 		 * 		  using information from it's GitHub repository
 		 */

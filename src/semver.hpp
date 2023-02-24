@@ -13,11 +13,6 @@ namespace cpm {
 
 		public:
 
-		int major;
-		int minor;
-		int patch;
-		std::string suffix;
-
 		/**
 		 * @brief Default constructor for generic semantic verion
 		 */
@@ -41,11 +36,39 @@ namespace cpm {
 		SemVer(const std::string &version_str);
 
 		/**
+		 * @brief Getter for major version
+		 * 
+		 * @return The major version
+		 */
+		int get_major() const;
+
+		/**
+		 * @brief Getter for minor version
+		 * 
+		 * @return The minor version
+		 */
+		int get_minor() const;
+		
+		/**
+		 * @brief Getter for patch version
+		 * 
+		 * @return The patch version
+		 */
+		int get_patch() const;
+		
+		/**
+		 * @brief Getter for suffix
+		 * 
+		 * @return The suffix
+		 */
+		std::string get_suffix() const;
+
+		/**
 		 * @brief Get the semantic version as a string
 		 * 
 		 * @return The semantic version as a string
 		 */
-		std::string to_string() const;
+		std::string string() const;
 
 		/**
 		 * @brief Check if the version is different from the default one
@@ -61,6 +84,14 @@ namespace cpm {
 
 		friend bool operator==(const SemVer &lhs, const SemVer &rhs);
 		friend bool operator!=(const SemVer &lhs, const SemVer &rhs);
+
+
+		private:
+
+		int major;
+		int minor;
+		int patch;
+		std::string suffix;
 	};
 }
 

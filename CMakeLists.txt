@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 0.17.0)
+project(cpm VERSION 0.18.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -17,7 +17,7 @@ add_executable(cpm
 	src/commands/sync.cpp
 	src/db/package_db.cpp
 	src/logger/logger.cpp
-	src/script/cpm_pack.cpp
+	src/script/package_config.cpp
 	src/main.cpp
 	src/package.cpp
 	src/paths.cpp
