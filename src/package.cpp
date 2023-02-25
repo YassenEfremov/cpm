@@ -1,5 +1,6 @@
 #include "package.hpp"
 
+#include "logger/logger.hpp"
 #include "paths.hpp"
 #include "util.hpp"
 
@@ -45,34 +46,43 @@ namespace cpm {
 		return fmt::format("{}@{}", this->name, this->version.string());
 	}
 
-	void Package::find_location() {
+	void Package::init() {
+		CPM_LOG_INFO("Looking for an available GitHub profile ...");
 		if (!fs::exists(paths::global_dir / paths::package_locations)) {
-			throw std::runtime_error(fmt::format("package locations file not found!"));
+			throw std::runtime_error(fmt::format(
+				"package locations file not found!\n"
+				"Make sure you've installed cpm correctly!"
+			));
 		}
-        std::ifstream package_repos_file(paths::global_dir / paths::package_locations);
-        auto package_config = json::parse(package_repos_file);
-		for (const auto &package_location : package_config["package_locations"].get<std::vector<std::string>>()) {
+        std::ifstream package_locations_file(paths::global_dir / paths::package_locations);
+        auto package_locations_json = json::parse(package_locations_file);
+		auto package_locations = package_locations_json["package_locations"].get<std::vector<std::string>>();
+		this->location = "";
+		for (const auto &package_location : package_locations) {
+			CPM_LOG_INFO("Trying {}", package_location);
 			cpr::Response response = cpr::Head(
 				cpr::Url{(paths::api_url / package_location / this->name).string()}
 			);
 			if (response.status_code == cpr::status::HTTP_OK) {
+				CPM_LOG_INFO("Success (status {}) using {}",
+							 response.status_code, package_location);
 			    this->location = package_location;
-				return;
+				break;
 			}
+			CPM_LOG_INFO("Failed (status {}) {}",
+						 response.status_code, package_location);
+		}
+		if (this->location.empty()) {
+	    	throw std::invalid_argument(fmt::format("{}: package not found!", this->name));
 		}
 
-        throw std::invalid_argument(fmt::format(
-            "{}: package not found!", this->name
-        ));
-	}
-
-	void Package::init() {
 		if (!this->version.is_specified()) {
-			cpr::Response res = cpr::Get(
+			CPM_LOG_INFO("Getting latest version for package {} ...", this->name);
+			cpr::Response response = cpr::Get(
 				cpr::Url{(paths::api_url / this->location / this->name / "tags").string()}
 			);
-			json res_json = json::parse(res.text);
-			std::sort(res_json.begin(), res_json.end(),
+			json response_json = json::parse(response.text);
+			std::sort(response_json.begin(), response_json.end(),
 				[](const json p1, const json p2) {
 					SemVer v1(p1["name"].get<std::string>());
 					SemVer v2(p2["name"].get<std::string>());
@@ -80,32 +90,19 @@ namespace cpm {
 					return v1 > v2;
 				}
 			);
-			this->version = SemVer(res_json[0]["name"].get<std::string>());
+			this->version = SemVer(response_json[0]["name"].get<std::string>());
 
 		} else {
-			cpr::Response res = cpr::Head(
+			CPM_LOG_INFO("Checking version {} for package {}", this->version.string(), this->name);
+			cpr::Response response = cpr::Head(
 				cpr::Url{(paths::api_url / this->location / this->name / "zipball" / this->version.string()).string()}
 			);
-			if (res.status_code != cpr::status::HTTP_OK) {
+			if (response.status_code != cpr::status::HTTP_OK) {
 				throw std::invalid_argument(fmt::format(
 					"{}: version {} not found!", this->name, this->version.string()
 				));
 			}
 		}
-
-        cpr::Response res = cpr::Get(
-            cpr::Url{(paths::api_url / this->location / this->name / "contents" / paths::package_config).string()}
-        );
-        json res_json = json::parse(res.text);
-        json config_json = json::parse(util::base64_decode(res_json["content"].get<std::string>()));
-        if (config_json.contains("dependencies")) {
-			for (const auto &[name, version_str] : config_json["dependencies"].get<std::map<std::string, std::string>>()) {
-				Package package_dep(name, SemVer(version_str));
-				package_dep.location = this->location;
-				package_dep.init();
-				this->dependencies->insert(package_dep);
-			}
-        }
 	}
 
 	bool operator==(const Package &lhs, const Package &rhs) {

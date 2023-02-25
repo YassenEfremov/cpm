@@ -43,7 +43,7 @@ namespace cpm {
                      (this->context.cwd / paths::package_config).string());
         CPM_INFO("Packages in {}:\n",
                  (this->context.cwd / paths::packages_dir / "").string());
-        for (auto package : installed_packages) {
+        for (const auto &package : installed_packages) {
             if (!fs::exists(this->context.cwd / paths::packages_dir / package.get_name())) {
                 CPM_INFO("  {} (not installed)\n", package.string());
                 
@@ -82,8 +82,8 @@ namespace cpm {
         // }
         CPM_INFO("{}\n", package.string());
 
-        PackageConfig pc(dir / paths::package_config);
-        auto deps = pc.list();
+        PackageConfig package_config(dir / paths::package_config);
+        auto deps = package_config.list();
         depth++;
         for (const auto &dep : deps) {
             print_deps(dep, dir / paths::packages_dir / dep.get_name() / "");

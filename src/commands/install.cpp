@@ -59,7 +59,6 @@ namespace cpm {
                 CPM_INFO("Checking package {}@{} ...", tokens[0], tokens[1]);
                 Package new_package(tokens[0], SemVer(tokens[1]));
                 try {
-                    new_package.find_location();
                     new_package.init();
                 } catch(const std::exception &e) {
                     CPM_INFO(" failed!\n");
@@ -77,7 +76,6 @@ namespace cpm {
                 CPM_INFO("Resolving version for package {} ...", tokens[0]);
                 Package new_package(tokens[0]);
                 try {
-                    new_package.find_location();
                     new_package.init();
                 } catch(const std::exception &e) {
                     CPM_INFO(" failed!\n");
@@ -98,7 +96,7 @@ namespace cpm {
         }
 
         int records_modified = 0;
-        for (auto package : packages) {
+        for (const auto &package : packages) {
             try {
                 records_modified += this->install_package(
                     package, this->context.cwd / paths::packages_dir / ""
@@ -139,7 +137,7 @@ namespace cpm {
             "Installing package into {} ...",
             (output_dir / package.get_name() / "").string()
         );
-        this->install_deps(package, output_dir);
+        this->install_all(package, package.get_location(), output_dir);
 
         CPM_LOG_INFO("Adding package to {} ...", paths::package_config.string());
         return this->register_package(package);
@@ -152,19 +150,12 @@ namespace cpm {
         return specified && installed;
     }
 
-	void InstallCommand::install_deps(const Package &package, const fs::path &output_dir) {
-        for (const auto &dep : *package.get_dependencies()) {
-            CPM_LOG_INFO(
-                "installing dependency of {}: {}", package.get_name(), dep.get_name()
-            );
-            if (!this->check_if_installed(dep)) {
-                this->install_deps(dep, output_dir / package.get_name() / paths::packages_dir / "");
-            }
-        }
+	void InstallCommand::install_all(const Package &package, const std::string &location,
+                                     const fs::path &output_dir) {
 
         CPM_LOG_INFO("downloading package {} ...", package.get_name());
         CPM_INFO(" \x1b[34mv\x1b[37m Downloading repository\n");
-        cpr::Response response = this->download_package(package, package.get_location(),
+        cpr::Response response = this->download_package(package, location,
             [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
                 cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
                 double downloaded = static_cast<double>(downloadNow);
@@ -197,23 +188,38 @@ namespace cpm {
                 return true;
             }
         );
-        CPM_LOG_INFO(
-            "download complete, total: {} {}", response.text.size() / 1000, "KB"
-        );
+        CPM_LOG_INFO("download complete, total: {} KB", response.text.size() / 1000);
         std::cout << "\r   [   done   ]\n";
 
         CPM_LOG_INFO("extracting package {} ...", package.get_name());
+        CPM_INFO(" \x1b[32m+\x1b[37m Extracting archive entries\n");
         this->extract_package(
             response.text, this->context.cwd / paths::packages_dir / package.get_name(),
             [](int currentEntry, int totalEntries) {
-                std::cout << "\r \x1b[32m+\x1b[37m Extracting archive entries " << currentEntry << "/" << totalEntries;
+                std::cout << "\r   [";
+                double step = static_cast<double>(totalEntries) / 10;
+                for (double i = 0; i < totalEntries; i += step) {
+                    if (i < currentEntry) {
+                        std::cout << "#";
+                    } else {
+                        std::cout << " ";
+                    }
+                }
+                std::cout << "] " << currentEntry << "/" << totalEntries << std::flush;
                 return true;
             }
         );
         CPM_LOG_INFO("extract complete");
-        std::cout << " done.\n";
+        std::cout << "\r   [   done   ]\n";
 
-        for (const auto &dep : *package.get_dependencies()) {
+        PackageConfig package_config(output_dir / package.get_name() / paths::package_config);
+        for (const auto &dep : package_config.list()) {
+            CPM_LOG_INFO("installing dependency of {}: {}", package.get_name(), dep.get_name());
+            if (!this->check_if_installed(dep)) {
+                this->install_all(dep, location, output_dir / package.get_name() / paths::packages_dir / "");
+            }
+            CPM_LOG_INFO("installed dependency {}", dep.get_name());
+
             CPM_LOG_INFO("creating symlink to {} ...", dep.get_name());
             fs::create_directory(output_dir / package.get_name() / paths::packages_dir);
             fs::create_directory_symlink(

@@ -75,15 +75,7 @@ namespace cpm {
 		std::string string() const;
 
 		/**
-		 * @brief Find a GitHub profile from which the package could be
-		 * 		  downloaded. The possible profiles are specified in the local
-		 * 		  package_locations.json file.
-		 */
-		void find_location();
-
-		/**
-		 * @brief Initialize the package's dependencies and it's other fields
-		 * 		  using information from it's GitHub repository
+		 * @brief Initialize the package location and resolve it's version
 		 */
 		void init();
 

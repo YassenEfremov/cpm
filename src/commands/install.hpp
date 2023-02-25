@@ -69,9 +69,12 @@ namespace cpm {
 		 * 		  recursively
 		 * 
 		 * @param package the package to install
+		 * @param location a GitHub profile from which the package could be
+		 * 				   downloaded
 		 * @param output_dir the directory in which to install the package
 		 */
-		void install_deps(const Package &package, const fs::path &output_dir);
+		void install_all(const Package &package, const std::string &location,
+						 const fs::path &output_dir);
 
 		/**
 		 * @brief Download the specified package repository
