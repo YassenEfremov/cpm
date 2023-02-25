@@ -52,8 +52,10 @@ namespace cpm {
 		 * 		  removal
 		 *
 		 * @param package the package to check
+		 * 
+		 * @return true if not installed, false otherwise
 		 */
-		virtual void check_if_not_installed(const Package &package);
+		virtual bool check_if_not_installed(const Package &package);
 
 		/**
 		 * @brief Delete the specified package and its dependencies from the
@@ -63,7 +65,7 @@ namespace cpm {
 		 * 
 		 * @return The number of deleted entries
 		 */
-		std::uintmax_t delete_package(const Package &package);
+		std::uintmax_t delete_all(const Package &package);
 
 		/**
 		 * @brief Unregister the specified package
