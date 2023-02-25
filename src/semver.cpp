@@ -24,21 +24,10 @@ namespace cpm {
 		this->suffix = "";
 	}
 
-	int SemVer::get_major() const {
-		return this->major;
-	}
-
-	int SemVer::get_minor() const {
-		return this->minor;
-	}
-
-	int SemVer::get_patch() const {
-		return this->patch;
-	}
-
-	std::string SemVer::get_suffix() const {
-		return this->suffix;
-	}
+	int SemVer::get_major() const { return this->major; }
+	int SemVer::get_minor() const { return this->minor; }
+	int SemVer::get_patch() const { return this->patch; }
+	std::string SemVer::get_suffix() const { return this->suffix; }
 
 	std::string SemVer::string() const {
 		std::string str = std::to_string(this->major) + "." +

@@ -36,9 +36,10 @@ namespace cpm::paths {
 	extern const fs::path api_url;
 
 	/**
-	 * @brief The name of the repository where cpm should search for packages
+	 * @brief The file which contains the locations where cpm should search for
+	 * 		  packages
 	 */
-	extern const std::string owner_name;
+	extern const fs::path package_locations;
 }
 
 

@@ -63,7 +63,7 @@ namespace cpm {
 
         CPM_LOG_INFO("Installing new packages ...",paths::package_config.string());
         int new_packages = 0;
-        for (auto package : packages) {
+        for (const auto &package : packages) {
             try {
                 new_packages += this->install_package(
                     package, this->context.cwd / paths::packages_dir / ""
@@ -111,7 +111,7 @@ namespace cpm {
             (output_dir / package.get_name() / "").string()
         );
 
-        this->install_deps(package, output_dir);
+        this->install_all(package, package.get_location(), output_dir);
 
         return 1;
     }

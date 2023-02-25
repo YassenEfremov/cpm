@@ -53,6 +53,13 @@ namespace cpm {
 		SemVer get_version() const;
 
 		/**
+		 * @brief Getter for location
+		 * 
+		 * @return The location of the package
+		 */
+		std::string get_location() const;
+
+		/**
 		 * @brief Getter for dependencies
 		 * 
 		 * @return The package's dependencies
@@ -68,8 +75,7 @@ namespace cpm {
 		std::string string() const;
 
 		/**
-		 * @brief Initialize the package's dependencies and it's other fields
-		 * 		  using information from it's GitHub repository
+		 * @brief Initialize the package location and resolve it's version
 		 */
 		void init();
 
@@ -80,6 +86,7 @@ namespace cpm {
 
 		std::string name;
 		SemVer version;
+		std::string location;
 		std::string url;
 		std::string description;
 		std::string author;
