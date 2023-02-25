@@ -24,5 +24,5 @@ namespace cpm::paths {
 
 	const fs::path api_url = "https://api.github.com/repos";
 
-	const std::string owner_name = "cpm-examples";
+	const fs::path package_locations = "package_locations.json";
 }

@@ -11,6 +11,7 @@
 
 #include "cpr/cpr.h"
 #include "nlohmann/json.hpp"
+#include "spdlog/fmt/ostr.h"
 
 extern "C" {
     #include "zip.h"
@@ -18,6 +19,7 @@ extern "C" {
 
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -57,6 +59,7 @@ namespace cpm {
                 CPM_INFO("Checking package {}@{} ...", tokens[0], tokens[1]);
                 Package new_package(tokens[0], SemVer(tokens[1]));
                 try {
+                    new_package.find_location();
                     new_package.init();
                 } catch(const std::exception &e) {
                     CPM_INFO(" failed!\n");
@@ -74,6 +77,7 @@ namespace cpm {
                 CPM_INFO("Resolving version for package {} ...", tokens[0]);
                 Package new_package(tokens[0]);
                 try {
+                    new_package.find_location();
                     new_package.init();
                 } catch(const std::exception &e) {
                     CPM_INFO(" failed!\n");
@@ -87,7 +91,9 @@ namespace cpm {
                 packages.insert(new_package);
 
             } else {
-                throw std::invalid_argument(package_str + ": invalid package format!");
+                throw std::invalid_argument(fmt::format(
+                    "{}: invalid package format!", package_str
+                ));
             }
         }
 
@@ -115,11 +121,13 @@ namespace cpm {
     }
 
 	int InstallCommand::install_package(const Package &package,
-                                        const fs::path &output_dir) {
+										const fs::path &output_dir) {
 
-        CPM_LOG_INFO("Checking if package {} is already installed ...", package.get_name());
+		CPM_LOG_INFO("Checking if package {} is already installed ...", package.get_name());
         if (this->check_if_installed(package)) {
-            throw std::invalid_argument(package.get_name() + ": package already installed!");
+            throw std::invalid_argument(fmt::format(
+                "{}: package already installed!", package.get_name()
+            ));
         }
 
         CPM_INFO(
@@ -135,9 +143,9 @@ namespace cpm {
 
         CPM_LOG_INFO("Adding package to {} ...", paths::package_config.string());
         return this->register_package(package);
-    }
+	}
 
-    bool InstallCommand::check_if_installed(const Package &package) {
+	bool InstallCommand::check_if_installed(const Package &package) {
         bool specified = this->context.repo->contains(package);
         bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
 
@@ -156,7 +164,7 @@ namespace cpm {
 
         CPM_LOG_INFO("downloading package {} ...", package.get_name());
         CPM_INFO(" \x1b[34mv\x1b[37m Downloading repository\n");
-        cpr::Response response = this->download_package(package,
+        cpr::Response response = this->download_package(package, package.get_location(),
             [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
                 cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
                 double downloaded = static_cast<double>(downloadNow);
@@ -217,7 +225,7 @@ namespace cpm {
     }
 
 	cpr::Response InstallCommand::download_package(
-        const Package &package,
+        const Package &package, const std::string location,
         std::function<bool(
             cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
             cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
@@ -225,31 +233,18 @@ namespace cpm {
         )> download_progress
     ) {
         CPM_LOG_INFO(
-            "HEAD {}/.../{}/zipball/{}",
-            paths::api_url.string(), package.get_name(), package.get_version().string()
+            "GET {}/{}/{}/zipball/{}",
+            paths::api_url.string(), location,
+            package.get_name(), package.get_version().string()
         );
-        cpr::Response res = cpr::Head(
-            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() /
-                     "zipball" / package.get_version().string()).string()}
-        );
-        CPM_LOG_INFO("Response status: {}", res.status_code);
-
-        if (res.status_code != cpr::status::HTTP_OK) {
-            throw std::invalid_argument(package.get_name() + ": package not found!");
-        }
-
-        CPM_LOG_INFO(
-            "GET {}/.../{}/zipball/{}",
-            paths::api_url.string(), package.get_name(), package.get_version().string()
-        );
-        res = cpr::Get(
-            cpr::Url{(paths::api_url / paths::owner_name / package.get_name() /
+        cpr::Response response = cpr::Get(
+            cpr::Url{(paths::api_url / location / package.get_name() /
                      "zipball" / package.get_version().string()).string()},
             cpr::ProgressCallback(download_progress)
         );
-        CPM_LOG_INFO("Response status: {}", res.status_code);
+        CPM_LOG_INFO("Response status: {}", response.status_code);
 
-        return res;
+        return response;
 	}
 
 	void InstallCommand::extract_package(

@@ -49,6 +49,7 @@ namespace cpm {
             CPM_LOG_INFO("Checking package {} ...", package.string());
             CPM_INFO("Checking package {} ...", package.string());
             try {
+                package.find_location();
                 package.init();
             } catch(const std::exception &e) {
                 CPM_INFO(" failed!\n");

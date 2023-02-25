@@ -53,6 +53,13 @@ namespace cpm {
 		SemVer get_version() const;
 
 		/**
+		 * @brief Getter for location
+		 * 
+		 * @return The location of the package
+		 */
+		std::string get_location() const;
+
+		/**
 		 * @brief Getter for dependencies
 		 * 
 		 * @return The package's dependencies
@@ -68,6 +75,13 @@ namespace cpm {
 		std::string string() const;
 
 		/**
+		 * @brief Find a GitHub profile from which the package could be
+		 * 		  downloaded. The possible profiles are specified in the local
+		 * 		  package_locations.json file.
+		 */
+		void find_location();
+
+		/**
 		 * @brief Initialize the package's dependencies and it's other fields
 		 * 		  using information from it's GitHub repository
 		 */
@@ -80,6 +94,7 @@ namespace cpm {
 
 		std::string name;
 		SemVer version;
+		std::string location;
 		std::string url;
 		std::string description;
 		std::string author;

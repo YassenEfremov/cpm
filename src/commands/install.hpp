@@ -77,12 +77,14 @@ namespace cpm {
 		 * @brief Download the specified package repository
 		 * 
 		 * @param package the package to download
+		 * @param location a GitHub profile from which the package could be
+		 * 				   downloaded
 		 * @param progress a function to show the download progress
 		 * 
 		 * @return A response object
 		 */
 		cpr::Response download_package(
-			const Package &package,
+			const Package &package, const std::string location,
 			std::function<bool(
 				cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
 				cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,

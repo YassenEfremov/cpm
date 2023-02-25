@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 0.18.0)
+project(cpm VERSION 0.19.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -53,4 +53,9 @@ target_link_libraries(cpm
 		spdlog::spdlog
 		sqlite3
 		zip::zip
+)
+
+install(
+	FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/package_locations.json
+	DESTINATION $ENV{HOME}/.local/share/cpm
 )
