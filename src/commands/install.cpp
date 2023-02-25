@@ -145,9 +145,9 @@ namespace cpm {
 
 	bool InstallCommand::check_if_installed(const Package &package) {
         bool specified = this->context.repo->contains(package);
-        bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
+        bool downloaded = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
 
-        return specified && installed;
+        return specified && downloaded;
     }
 
 	void InstallCommand::install_all(const Package &package, const std::string &location,

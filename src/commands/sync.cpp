@@ -15,6 +15,7 @@
 #include <functional>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 
 #include <cstdint>
 
@@ -30,8 +31,7 @@ namespace cpm {
         CPM_LOG_INFO("===== Starting sync command =====");
 
         CPM_LOG_INFO("Obtaining new packages from {} ...",paths::package_config.string());
-        PackageConfig cpm_pack(fs::current_path() / paths::package_config);
-        auto packages = cpm_pack.list();
+        auto packages = this->context.repo->list();
         CPM_LOG_INFO("New packages in {}: {}", paths::package_config.string(),
             [&]() {
                 std::string packages_str = "[";
@@ -45,6 +45,7 @@ namespace cpm {
         CPM_INFO("Synchronizing packages with {} ...\n", paths::package_config.string());
 
         CPM_LOG_INFO("Initializing new packages ...",paths::package_config.string());
+        std::unordered_set<Package, Package::Hash> packages_to_install;
         for (auto package : packages) {
             CPM_LOG_INFO("Checking package {} ...", package.string());
             CPM_INFO("Checking package {} ...", package.string());
@@ -59,11 +60,12 @@ namespace cpm {
                 package.get_version().string(), package.get_name()
             );
             CPM_INFO(" found.\n");
+            packages_to_install.insert(package);
         }
 
         CPM_LOG_INFO("Installing new packages ...",paths::package_config.string());
         int new_packages = 0;
-        for (const auto &package : packages) {
+        for (const auto &package : packages_to_install) {
             try {
                 new_packages += this->install_package(
                     package, this->context.cwd / paths::packages_dir / ""
@@ -81,7 +83,7 @@ namespace cpm {
 
             Package package(dir_entry.path().filename().string());
 
-            if (packages.find(package) == packages.end()) {
+            if (!this->context.repo->contains(package)) {
                 CPM_LOG_INFO("Found unspecified package {}, removing", package.get_name());
                 unspecified_packages += this->remove_package(package);
             }
@@ -124,7 +126,7 @@ namespace cpm {
 
         CPM_INFO("{}: Not specified, removing ...\n", package.get_name());
         
-        std::uintmax_t n = this->delete_package(package);
+        std::uintmax_t n = this->delete_all(package);
         CPM_INFO("    Removed {} entries\n", n);
 
         return 1;

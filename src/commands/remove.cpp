@@ -9,6 +9,8 @@
 #include "semver.hpp"
 #include "util.hpp"
 
+#include "spdlog/fmt/ostr.h"
+
 #include <exception>
 #include <filesystem>
 #include <stdexcept>
@@ -64,7 +66,11 @@ namespace cpm {
     int RemoveCommand::remove_package(const Package &package) {
 
         CPM_LOG_INFO("Checking if package {} is not installed ...", package.get_name());
-        this->check_if_not_installed(package);
+        if (this->check_if_not_installed(package)) {
+            throw std::invalid_argument(fmt::format(
+                "{}: package not installed!", package.get_name()
+            ));
+        }
 
         CPM_INFO(
             "Removing package from {} ...\n",
@@ -75,7 +81,7 @@ namespace cpm {
             "Removing package from {} ...\n",
             (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
         );
-        std::uintmax_t n = this->delete_package(package);
+        std::uintmax_t n = this->delete_all(package);
         CPM_LOG_INFO("Removed {} entries", n);
         CPM_INFO(" \x1b[31m-\x1b[37m Removed {} entries\n", n);
 
@@ -83,17 +89,24 @@ namespace cpm {
         return this->unregister_package(package);
     }
 
-    void RemoveCommand::check_if_not_installed(const Package &package) {
+    bool RemoveCommand::check_if_not_installed(const Package &package) {
         bool specified = this->context.repo->contains(package);
-        bool installed = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
+        bool downloaded = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
 
-        if (!specified && !installed) {
-            throw std::invalid_argument(package.get_name() + ": package not installed!");
-        }
+        return !specified || !downloaded;
     }
 
-	std::uintmax_t RemoveCommand::delete_package(const Package &package) {
-        return fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
+	std::uintmax_t RemoveCommand::delete_all(const Package &package) {
+        std::uintmax_t total_entries = 0;
+        if (fs::exists(this->context.cwd / paths::packages_dir /
+                       package.get_name() / paths::packages_dir / "")) {
+            for (const auto &dep : fs::directory_iterator(this->context.cwd / paths::packages_dir /
+                                                        package.get_name() / paths::packages_dir / "")) {
+                total_entries += this->delete_all(Package(dep.path().filename().string()));
+            }
+        }
+        total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
+        return total_entries;
     }
 
 	int RemoveCommand::unregister_package(const Package &package) {
