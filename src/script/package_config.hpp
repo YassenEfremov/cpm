@@ -15,75 +15,74 @@ namespace fs = std::filesystem;
 
 namespace cpm {
 
+/**
+ * @brief A class representing the package config
+ */
+class PackageConfig : public Repository<Package, Package::Hash> {
+
+	public:
+
 	/**
-	 * @brief A class representing the package config
+	 * @brief Constructor for package config
+	 * 
+	 * @param filename the name of the package config file
 	 */
-	class PackageConfig : public Repository<Package, Package::Hash> {
+	PackageConfig(const fs::path &filename);
 
-		public:
+	/**
+	 * @brief Add the specified package/s to the package config file
+	 * 
+	 * @param package the package to add
+	 * 
+	 * @return The number of lines modified in the package config file
+	 */
+	int add(const Package &package) override;
 
-		/**
-		 * @brief Constructor for package config
-		 * 
-		 * @param filename the name of the package config file
-		 */
-		PackageConfig(const fs::path &filename);
+	/**
+	 * @brief Remove the specified package/s from the package config file
+	 * 
+	 * @param package the package to remove
+	 * 
+	 * @return The number of lines modified in the package config file
+	 */
+	int remove(const Package &package) override;
 
-		/**
-		 * @brief Add the specified package/s to the package config file
-		 * 
-		 * @param package the package to add
-		 * 
-		 * @return The number of lines modified in the package config file
-		 */
-		int add(const Package &package) override;
+	/**
+	 * @brief List all of the installed packages in the package config file
+	 * 
+	 * @return A map of all the installed packages in the package config file
+	 */
+	std::unordered_set<Package, Package::Hash> list() const override;
 
-		/**
-		 * @brief Remove the specified package/s from the package config file
-		 * 
-		 * @param package the package to remove
-		 * 
-		 * @return The number of lines modified in the package config file
-		 */
-		int remove(const Package &package) override;
+	/**
+	 * @brief Check if the specified package is in the package config file
+	 * 
+	 * @param package the package
+	 * 
+	 * @return true if the package is found, false otherwise
+	 */
+	bool contains(const Package &package) const override;
 
-		/**
-		 * @brief List all of the installed packages in the package config file
-		 * 
-		 * @return A map of all the installed packages in the package config
-		 * 		   file
-		 */
-		std::unordered_set<Package, Package::Hash> list() const override;
-
-		/**
-		 * @brief Check if the specified package is in the package config file
-		 * 
-		 * @param package the package
-		 * 
-		 * @return true if the package is found, false otherwise
-		 */
-		bool contains(const Package &package) const override;
-
-		/**
-		 * @brief Create a new package with the default field values in the
-		 * 		  current package config file
-		 * 
-		 * @return The created package
-		 */
-		Package create_default();
+	/**
+	 * @brief Create a new package with the default field values in the current
+	 * 		  package config file
+	 * 
+	 * @return The created package
+	 */
+	Package create_default();
 
 
-		private:
+	private:
 
-		nlohmann::ordered_json config_json;
+	nlohmann::ordered_json config_json;
 
-		/**
-		 * @brief Save the current config_json to a file with the current
-		 * 		  filename
-		 */
-		void save();
-	};
-}
+	/**
+	 * @brief Save the current config_json to a file with the current filename
+	 */
+	void save();
+};
+
+} // namespace cpm
 
 
 #endif	// CPM_PACK_H

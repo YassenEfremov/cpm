@@ -26,112 +26,113 @@ namespace fs = std::filesystem;
 
 namespace cpm {
 
-    RemoveCommand::RemoveCommand(const std::string &name) : Command(name) {}
+RemoveCommand::RemoveCommand(const std::string &name) : Command(name) {}
 
-    void RemoveCommand::run() {
+void RemoveCommand::run() {
 
-        CPM_LOG_INFO("===== Starting remove command =====");
+    CPM_LOG_INFO("===== Starting remove command =====");
 
-        auto packages_str = this->get<std::vector<std::string>>("packages");
-        CPM_LOG_INFO("args: {}", [&](){
-            std::string args = "[";
-            for (const auto &arg : packages_str) {
-                args += arg + ", ";
-            }
-            return args + "]";
-        }());
-        std::unordered_set<Package, Package::Hash> packages;
-        for (const auto &package_str : packages_str) {
-            packages.insert(Package(package_str));
+    auto packages_str = this->get<std::vector<std::string>>("packages");
+    CPM_LOG_INFO("args: {}", [&](){
+        std::string args = "[";
+        for (const auto &arg : packages_str) {
+            args += arg + ", ";
         }
-
-        int records_modified = 0;
-        for (const auto &package : packages) {
-            try {
-                records_modified += this->remove_package(package);
-
-            } catch(const std::exception &e) {
-                CPM_LOG_ERR(e.what());
-                CPM_ERR(e.what());
-            }
-        }
-
-        CPM_INFO(
-            "{}: modified {} record/s\n",
-            this->context.repo->get_filename().filename().string(), records_modified
-        );
-
-        CPM_LOG_INFO("===== Finished remove. =====");
+        return args + "]";
+    }());
+    std::unordered_set<Package, Package::Hash> packages;
+    for (const auto &package_str : packages_str) {
+        packages.insert(Package(package_str));
     }
 
-    int RemoveCommand::remove_package(const Package &package) {
+    int records_modified = 0;
+    for (const auto &package : packages) {
+        try {
+            records_modified += this->remove_package(package);
 
-        CPM_LOG_INFO("Checking if package {} is not installed ...", package.get_name());
-        if (this->check_if_not_installed(package)) {
-            throw std::invalid_argument(fmt::format(
-                "{}: package not installed!", package.get_name()
-            ));
+        } catch(const std::exception &e) {
+            CPM_LOG_ERR(e.what());
+            CPM_ERR(e.what());
         }
-
-        CPM_INFO(
-            "Removing package from {} ...\n",
-            (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
-        );
-
-        CPM_LOG_INFO(
-            "Removing package from {} ...",
-            (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
-        );
-        std::uintmax_t n = this->delete_all(package);
-        CPM_LOG_INFO("Removed {} entries", n);
-        CPM_INFO(RED_FG(" - ") "Removed {} entries\n", n);
-
-        CPM_LOG_INFO("Removing package from {} ...", paths::package_config.string());
-        return this->unregister_package(package);
     }
 
-    bool RemoveCommand::check_if_not_installed(const Package &package) {
-        bool specified = this->context.repo->contains(package);
-        bool downloaded = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
+    CPM_INFO(
+        "{}: modified {} record/s\n",
+        this->context.repo->get_filename().filename().string(), records_modified
+    );
 
-        return !specified || !downloaded;
-    }
-
-	std::uintmax_t RemoveCommand::delete_all(const Package &package) {
-        std::uintmax_t total_entries = 0;
-        if (fs::exists(this->context.cwd / paths::packages_dir /
-                       package.get_name() / paths::packages_dir / "")) {
-            for (const auto &dep_path : fs::directory_iterator(this->context.cwd / paths::packages_dir /
-                                                        package.get_name() / paths::packages_dir / "")) {
-                Package dep(dep_path.path().filename().string());
-                CPM_LOG_INFO("Checking transitive dependency {} ...", dep.get_name());
-                if (this->context.lockfile->contains(dep)) {
-                    CPM_LOG_INFO(
-                        "Transitive dependency {} is required by another package! Skipping ...",
-                        dep.get_name()
-                    );
-                    continue;
-                }
-                total_entries += this->delete_all(dep);
-                this->context.lockfile->remove(dep);
-                CPM_LOG_INFO("Removed transitive dependency {}", dep.get_name());
-            }
-        }
-        CPM_LOG_INFO("{}", this->context.lockfile->contains_dep(package));
-        if (this->context.lockfile->contains_dep(package)) {
-            CPM_LOG_INFO(
-                "Package {} is required by another package! Skipping ...",
-                package.get_name()
-            );
-
-        } else {
-            total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
-            this->context.lockfile->remove(package);
-        }
-        return total_entries;
-    }
-
-	int RemoveCommand::unregister_package(const Package &package) {
-        return this->context.repo->remove(package);
-    }
+    CPM_LOG_INFO("===== Finished remove. =====");
 }
+
+int RemoveCommand::remove_package(const Package &package) {
+
+    CPM_LOG_INFO("Checking if package {} is not installed ...", package.get_name());
+    if (this->check_if_not_installed(package)) {
+        throw std::invalid_argument(fmt::format(
+            "{}: package not installed!", package.get_name()
+        ));
+    }
+
+    CPM_INFO(
+        "Removing package from {} ...\n",
+        (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
+    );
+
+    CPM_LOG_INFO(
+        "Removing package from {} ...",
+        (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
+    );
+    std::uintmax_t n = this->delete_all(package);
+    CPM_LOG_INFO("Removed {} entries", n);
+    CPM_INFO(RED_FG(" - ") "Removed {} entries\n", n);
+
+    CPM_LOG_INFO("Removing package from {} ...", paths::package_config.string());
+    return this->unregister_package(package);
+}
+
+bool RemoveCommand::check_if_not_installed(const Package &package) {
+    bool specified = this->context.repo->contains(package);
+    bool downloaded = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
+
+    return !specified || !downloaded;
+}
+
+std::uintmax_t RemoveCommand::delete_all(const Package &package) {
+    std::uintmax_t total_entries = 0;
+    if (fs::exists(this->context.cwd / paths::packages_dir /
+                    package.get_name() / paths::packages_dir / "")) {
+        for (const auto &dep_path : fs::directory_iterator(this->context.cwd / paths::packages_dir /
+                                                    package.get_name() / paths::packages_dir / "")) {
+            Package dep(dep_path.path().filename().string());
+            CPM_LOG_INFO("Checking transitive dependency {} ...", dep.get_name());
+            if (this->context.lockfile->contains(dep)) {
+                CPM_LOG_INFO(
+                    "Transitive dependency {} is required by another package! Skipping ...",
+                    dep.get_name()
+                );
+                continue;
+            }
+            total_entries += this->delete_all(dep);
+            this->context.lockfile->remove(dep);
+            CPM_LOG_INFO("Removed transitive dependency {}", dep.get_name());
+        }
+    }
+    CPM_LOG_INFO("{}", this->context.lockfile->contains_dep(package));
+    if (this->context.lockfile->contains_dep(package)) {
+        CPM_LOG_INFO(
+            "Package {} is required by another package! Skipping ...",
+            package.get_name()
+        );
+
+    } else {
+        total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
+        this->context.lockfile->remove(package);
+    }
+    return total_entries;
+}
+
+int RemoveCommand::unregister_package(const Package &package) {
+    return this->context.repo->remove(package);
+}
+
+} // namespace cpm
