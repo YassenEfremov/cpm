@@ -1,7 +1,10 @@
 #include "commands/install.hpp"
 
 #include "commands/command.hpp"
+#include "cli/colors.hpp"
+#include "cli/progress_bar.hpp"
 #include "db/package_db.hpp"
+#include "dep-man/lockfile.hpp"
 #include "logger/logger.hpp"
 #include "package.hpp"
 #include "paths.hpp"
@@ -23,8 +26,11 @@ extern "C" {
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <stdexcept>
 #include <string>
+#include <thread>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -85,7 +91,7 @@ namespace cpm {
                     "found version {} (latest) for package {}",
                     new_package.get_version().string(), new_package.get_name()
                 );
-                CPM_INFO(" found latest: \x1b[33m{}\x1b[37m\n", new_package.get_version().string());
+                CPM_INFO(" found latest: " YELLOW_FG("{}") "\n", new_package.get_version().string());
                 packages.insert(new_package);
 
             } else {
@@ -153,80 +159,149 @@ namespace cpm {
 	void InstallCommand::install_all(const Package &package, const std::string &location,
                                      const fs::path &output_dir) {
 
-        CPM_LOG_INFO("downloading package {} ...", package.get_name());
-        CPM_INFO(" \x1b[34mv\x1b[37m Downloading repository\n");
-        cpr::Response response = this->download_package(package, location,
-            [](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
-                cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
-                double downloaded = static_cast<double>(downloadNow);
-                double total = static_cast<double>(downloadTotal);
-                std::string unit = "B";
-                if (downloadNow >= 1000000) {
-                    downloaded /= 1000000;
-                    total /= 1000000;
-                    unit = "MB";
-                    std::cout << std::setw(60) << "\r";
-
-                } else if (downloadNow >= 1000) {
-                    downloaded /= 1000;
-                    total /= 1000;
-                    unit = "KB";
-                    std::cout << std::setw(60) << "\r";
-                }
-                if (total < downloaded) {
-                    total = downloaded;
-                }
-                std::cout << "\r   [";
-                for (int i = 0; i < 10; i++) {
-                    if (i == static_cast<int>(downloaded) % 10) {
-                        std::cout << "#";
-                    } else {
-                        std::cout << " ";
-                    }
-                }
-                std::cout << "] " << downloaded << " " << unit << std::flush;
-                return true;
-            }
+        CPM_LOG_INFO("obtaining lockfile for package {} ...", package.get_name());
+        CPM_INFO( BLUE_FG(" v ") "Obtaining lockfile ...");
+        std::unordered_set<Package, Package::Hash> packages_to_install{package};
+        cpr::Response response = cpr::Get(
+            cpr::Url{(paths::api_url / location / package.get_name() /
+                     "contents" / paths::lockfile).string()}
         );
-        CPM_LOG_INFO("download complete, total: {} KB", response.text.size() / 1000);
-        std::cout << "\r   [   done   ]\n";
+        json package_lockfile_json;
+        if (response.status_code == cpr::status::HTTP_OK) {
+            json response_json = json::parse(response.text);
+            std::string lockfile_str = util::base64_decode(response_json["content"].get<std::string>());
+            package_lockfile_json = json::parse(lockfile_str);
+            for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
+                packages_to_install.insert(Package(name, SemVer(content["version"].get<std::string>())));
+            }
+        }
+        std::cout << " done.\n";
 
-        CPM_LOG_INFO("extracting package {} ...", package.get_name());
-        CPM_INFO(" \x1b[32m+\x1b[37m Extracting archive entries\n");
-        this->extract_package(
-            response.text, this->context.cwd / paths::packages_dir / package.get_name(),
-            [](int currentEntry, int totalEntries) {
-                std::cout << "\r   [";
-                double step = static_cast<double>(totalEntries) / 10;
-                for (double i = 0; i < totalEntries; i += step) {
-                    if (i < currentEntry) {
-                        std::cout << "#";
-                    } else {
-                        std::cout << " ";
-                    }
+        std::vector<std::thread> threads;
+        std::mutex printing_mutex;
+        std::unordered_map<Package, ProgressBar, Package::Hash> all_progress;
+        const auto refresh_all_progress = [&]() {
+            std::lock_guard<std::mutex> lock(printing_mutex);
+            std::cout << fmt::format("\x1b[{}F", all_progress.size() * 2);
+            for (const auto &[package, progress_bar] : all_progress) {
+                progress_bar.print_active_stage();
+            }
+        };
+        for (int i = 0; i < packages_to_install.size() * 2; i++) std::cout << "\n";
+        for (const auto &current_package : packages_to_install) {
+            threads.emplace_back(std::thread([=, &all_progress]() {
+                CPM_LOG_INFO("Checking dependency {} ...", current_package.get_name());
+                if (this->context.lockfile->contains(current_package)) {
+                    CPM_LOG_INFO("Dependency {} is already satisfied! Skipping ...", current_package.get_name());
+                    all_progress.insert({
+                        current_package,
+                        ProgressBar(fmt::format(
+                            " * {:<25}{:>15}", current_package.string(), "(Skipping)"
+                        ))
+                    });
+                    all_progress.at(current_package).set_active_bar("   [   done   ]");
+                    all_progress.at(current_package).update_suffix(" satisfied");
+                    refresh_all_progress();
+                    return;
                 }
-                std::cout << "] " << currentEntry << "/" << totalEntries << std::flush;
-                return true;
-            }
-        );
-        CPM_LOG_INFO("extract complete");
-        std::cout << "\r   [   done   ]\n";
+                CPM_LOG_INFO("Dependency {} not found, installing ...", current_package.get_name());
 
-        PackageConfig package_config(output_dir / package.get_name() / paths::package_config);
-        for (const auto &dep : package_config.list()) {
-            CPM_LOG_INFO("installing dependency of {}: {}", package.get_name(), dep.get_name());
-            if (!this->check_if_installed(dep)) {
-                this->install_all(dep, location, output_dir / package.get_name() / paths::packages_dir / "");
-            }
-            CPM_LOG_INFO("installed dependency {}", dep.get_name());
+                CPM_LOG_INFO("downloading package {} ...", current_package.string());
+                all_progress.insert({
+                    current_package,
+                    ProgressBar(fmt::format(
+                        BLUE_FG(" v ") "{:<25}{:>15}",
+                        current_package.string(), "(Downloading)"
+                    ))
+                });
+                cpr::Response response = this->download_package(current_package, location,
+                    [=, &all_progress](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
+                                       cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
+                        double downloaded = static_cast<double>(downloadNow);
+                        double total = static_cast<double>(downloadTotal);
+                        std::string unit = "B";
+                        if (downloadNow >= 1000000) {
+                            downloaded /= 1000000;
+                            total /= 1000000;
+                            unit = "MB";
 
-            CPM_LOG_INFO("creating symlink to {} ...", dep.get_name());
+                        } else if (downloadNow >= 1000) {
+                            downloaded /= 1000;
+                            total /= 1000;
+                            unit = "KB";
+                        }
+                        if (total < downloaded) {
+                            total = downloaded;
+                        }
+                        all_progress.at(current_package)++;
+                        all_progress.at(current_package).update_suffix(fmt::format(
+                            " {0:.2f} {1}     ", downloaded, unit
+                        ));
+                        refresh_all_progress();
+                        return true;
+                    }
+                );
+                CPM_LOG_INFO("download complete, total: {} KB", response.text.size() / 1000);
+                all_progress.at(current_package).set_active_bar("   [   done   ]");
+                refresh_all_progress();
+
+                CPM_LOG_INFO("extracting package {} ...", current_package.string());
+                struct zip_t *zip = zip_stream_open(response.text.c_str(), response.text.size(), 0, 'r');
+                std::size_t total_entries = zip_entries_total(zip);
+                zip_stream_close(zip);
+                all_progress.at(current_package).add_stage(fmt::format(
+                    GREEN_FG(" + ") "{:<25}{:>15}",
+                    current_package.string(), "(Extracting)"
+                ), total_entries);
+                this->extract_package(response.text,
+                    this->context.cwd / paths::packages_dir / current_package.get_name(),
+                    [=, &all_progress](int currentEntry, int totalEntries) {
+                        all_progress.at(current_package)++;
+                        all_progress.at(current_package).update_suffix(fmt::format(
+                            " {}/{}     ", currentEntry, totalEntries
+                        ));
+                        refresh_all_progress();
+                        return true;
+                    }
+                );
+                CPM_LOG_INFO("extract complete");
+                all_progress.at(current_package).set_active_bar("   [   done   ]");
+                refresh_all_progress();
+            }));
+        }
+
+        for (auto &thread : threads) {
+            thread.join();
+        }
+
+        this->context.lockfile->add(package);
+
+        for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
+            this->context.lockfile->add_dep(package, Package(name, content["version"].get<std::string>()));
+            CPM_LOG_INFO("symlinking direct dependency: {} ...", name);
             fs::create_directory(output_dir / package.get_name() / paths::packages_dir);
             fs::create_directory_symlink(
-                this->context.cwd / paths::packages_dir / dep.get_name(),
-                output_dir / package.get_name() / paths::packages_dir / dep.get_name()
+                output_dir / name,
+                output_dir / package.get_name() / paths::packages_dir / name
             );
             CPM_LOG_INFO("symlink created");
+        }
+
+        for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
+            this->context.lockfile->add(Package(name, content["version"].get<std::string>()));
+            if (content.contains("dependencies")) {
+                for (const auto &[dep_name, dep_version] : content["dependencies"].items()) {
+                    this->context.lockfile->add_dep(Package(name, content["version"].get<std::string>()),
+                                        Package(dep_name, dep_version.get<std::string>()));
+                    CPM_LOG_INFO("symlinking transitive dependency: {} ...", dep_name);
+                    fs::create_directory(output_dir / name / paths::packages_dir);
+                    fs::create_directory_symlink(
+                        output_dir / dep_name,
+                        output_dir / name / paths::packages_dir / dep_name
+                    );
+                    CPM_LOG_INFO("symlink created");
+                }
+            }
         }
     }
 
@@ -259,9 +334,9 @@ namespace cpm {
     ) {
         struct zip_t *zip = zip_stream_open(stream.c_str(), stream.size(), 0, 'r');
 
-        std::size_t n = zip_entries_total(zip);
-        CPM_LOG_INFO("Total entries to extract: {}", n);
-        for (int i = 0; i < n; i++) {
+        std::size_t total_entries = zip_entries_total(zip);
+        CPM_LOG_INFO("Total entries to extract: {}", total_entries);
+        for (int i = 0; i < total_entries; i++) {
             zip_entry_openbyindex(zip, i);
 
             std::string entry_name = zip_entry_name(zip);
@@ -271,7 +346,7 @@ namespace cpm {
                 fs::create_directories(output_dir / entry_name.substr(first_slash + 1));
             }
             zip_entry_fread(zip, (output_dir / entry_name.substr(first_slash + 1)).string().c_str());
-            on_extract(i + 1, n);
+            on_extract(i + 1, total_entries);
 
             zip_entry_close(zip);
         }

@@ -21,8 +21,8 @@ namespace cpm {
         CPM_LOG_INFO("===== Starting create command =====");
 
         CPM_LOG_INFO("Creating {} file ...", paths::package_config.string());
-        PackageConfig cpm_pack(this->context.cwd / paths::package_config);
-        Package new_package = cpm_pack.create();
+        PackageConfig package_config(this->context.cwd / paths::package_config);
+        Package new_package = package_config.create_default();
 
         CPM_INFO("Created package \"{}\"\n", new_package.get_name());
 

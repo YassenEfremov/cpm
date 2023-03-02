@@ -17,7 +17,7 @@ namespace cpm {
 	/**
 	 * @brief A class representing the cpm sync command
 	 *
-	 * This command parses the current cpm_pack.json and installs/removes the
+	 * This command parses the current package config and installs/removes the
 	 * package dependencies listed in there
 	 */
 	class SyncCommand : virtual public Command,
@@ -34,7 +34,7 @@ namespace cpm {
 		SyncCommand(const std::string &name);
 
 		/**
-		 * @brief Parse the current cpm_pack.json and install/remove the package
+		 * @brief Parse the current package config and install/remove the package
 		 * 		  dependencies listed in there
 		 */
 		void run() override;

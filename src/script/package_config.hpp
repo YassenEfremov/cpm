@@ -16,61 +16,61 @@ namespace fs = std::filesystem;
 namespace cpm {
 
 	/**
-	 * @brief A class representing the cpm_pack.json
+	 * @brief A class representing the package config
 	 */
 	class PackageConfig : public Repository<Package, Package::Hash> {
 
 		public:
 
 		/**
-		 * @brief Constructor for cpm_pack.json
+		 * @brief Constructor for package config
 		 * 
-		 * @param filename the name of the cpm_pack.json file
+		 * @param filename the name of the package config file
 		 */
 		PackageConfig(const fs::path &filename);
 
 		/**
-		 * @brief Add the specified package/s to the cpm_pack.json file
+		 * @brief Add the specified package/s to the package config file
 		 * 
 		 * @param package the package to add
 		 * 
-		 * @return The number of lines modified in the cpm_pack.json file
+		 * @return The number of lines modified in the package config file
 		 */
-		int add(const cpm::Package &package) override;
+		int add(const Package &package) override;
 
 		/**
-		 * @brief Remove the specified package/s from the cpm_pack.json file
+		 * @brief Remove the specified package/s from the package config file
 		 * 
 		 * @param package the package to remove
 		 * 
-		 * @return The number of lines modified in the cpm_pack.json file
+		 * @return The number of lines modified in the package config file
 		 */
-		int remove(const cpm::Package &package) override;
+		int remove(const Package &package) override;
 
 		/**
-		 * @brief List all of the installed packages in the cpm_pack.json file
+		 * @brief List all of the installed packages in the package config file
 		 * 
-		 * @return A map of all the installed packages in the cpm_pack.json
+		 * @return A map of all the installed packages in the package config
 		 * 		   file
 		 */
-		std::unordered_set<Package, Package::Hash> list() override;
+		std::unordered_set<Package, Package::Hash> list() const override;
 
 		/**
-		 * @brief Check if the specified package is in the cpm_pack.json file
+		 * @brief Check if the specified package is in the package config file
 		 * 
 		 * @param package the package
 		 * 
 		 * @return true if the package is found, false otherwise
 		 */
-		bool contains(const Package &package) override;
+		bool contains(const Package &package) const override;
 
 		/**
 		 * @brief Create a new package with the default field values in the
-		 * 		  current cpm_pack.json file
+		 * 		  current package config file
 		 * 
 		 * @return The created package
 		 */
-		Package create();
+		Package create_default();
 
 
 		private:

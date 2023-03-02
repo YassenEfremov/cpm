@@ -15,6 +15,8 @@ namespace cpm::paths {
 	const fs::path package_db = "packages.db3";
 
 	const fs::path package_config = "cpm_pack.json";
+	
+	const fs::path lockfile = "cpm_lock.json";
 
 #ifdef _WIN32
 	const fs::path global_dir = std::getenv("LOCALAPPDATA") / fs::path("cpm");

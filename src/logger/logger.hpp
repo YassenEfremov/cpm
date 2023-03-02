@@ -7,11 +7,11 @@
 
 
 #define CPM_LOG_INFO(...) cpm::FileLogger::get_file_logger()->info(__VA_ARGS__)
-#define CPM_LOG_ERR(...) cpm::FileLogger::get_file_logger()->error(__VA_ARGS__)
+#define CPM_LOG_ERR(...)  cpm::FileLogger::get_file_logger()->error(__VA_ARGS__)
 
-#define CPM_INFO(...) cpm::CLILogger::get_stdout_logger()->info(__VA_ARGS__)
-#define CPM_ERR(...) cpm::CLILogger::get_stderr_logger()->error(__VA_ARGS__)
-#define CPM_WARN(...) cpm::CLILogger::get_stderr_logger()->warn(__VA_ARGS__)
+#define CPM_INFO(...)	cpm::CLILogger::get_stdout_logger()->info(__VA_ARGS__)
+#define CPM_ERR(...)	cpm::CLILogger::get_stderr_logger()->error(__VA_ARGS__)
+#define CPM_WARN(...)	cpm::CLILogger::get_stderr_logger()->warn(__VA_ARGS__)
 
 
 namespace cpm {

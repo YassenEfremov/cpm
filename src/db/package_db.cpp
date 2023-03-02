@@ -74,7 +74,7 @@ namespace cpm {
 		return rows_modified;
 	}
 
-	std::unordered_set<Package, Package::Hash> PackageDB::list() {
+	std::unordered_set<Package, Package::Hash> PackageDB::list() const {
 		std::unordered_set<Package, Package::Hash> packages;
 		char *err_msg;
         int err = sqlite3_exec(this->package_db, "SELECT name, version FROM installed_packages;",
@@ -92,7 +92,7 @@ namespace cpm {
 		return packages;
 	}
 
-	bool PackageDB::contains(const Package &package) {
+	bool PackageDB::contains(const Package &package) const {
 		sqlite3_stmt *stmt;
 		sqlite3_prepare(this->package_db,
 			"SELECT * FROM installed_packages WHERE name = ?;"

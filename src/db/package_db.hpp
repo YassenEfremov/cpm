@@ -52,7 +52,7 @@ namespace cpm {
 		 * 
 		 * @return A list of all the installed packages in the database
 		 */
-		std::unordered_set<Package, Package::Hash> list() override;
+		std::unordered_set<Package, Package::Hash> list() const override;
 
 		/**
 		 * @brief Check if the specified package is in the package database
@@ -61,7 +61,7 @@ namespace cpm {
 		 * 
 		 * @return true if the package is found, false otherwise
 		 */
-		bool contains(const Package &package) override;
+		bool contains(const Package &package) const override;
 
 
 		private:

@@ -7,6 +7,7 @@
 #include "commands/remove.hpp"
 #include "commands/sync.hpp"
 #include "db/package_db.hpp"
+#include "dep-man/lockfile.hpp"
 #include "paths.hpp"
 #include "script/package_config.hpp"
 #include "version.hpp"
@@ -70,7 +71,7 @@ namespace cpm {
 
         static SyncCommand sync_command("sync");
         sync_command.add_description(
-            "Install the package/s specified in the current cpm_pack.json"
+            "Install the package/s specified in the current package config"
         );
 
 
@@ -102,10 +103,13 @@ namespace cpm {
 
         try {
             if (commands[argv[1]]->is_used("--global")) {
-                commands[argv[1]]->context = CommandContext{
+                commands[argv[1]]->context = Command::Context{
                     paths::global_dir,
-                    std::make_unique<PackageDB>(
+                    std::make_shared<PackageDB>(
                         paths::global_dir / paths::package_db
+                    ),
+                    std::make_shared<Lockfile>(
+                        paths::global_dir / paths::lockfile
                     )
                 };
 
@@ -114,13 +118,15 @@ namespace cpm {
             }
 
         } catch(const std::exception &e) {
-            commands[argv[1]]->context = CommandContext{
+            commands[argv[1]]->context = Command::Context{
                 fs::current_path(),
-                std::make_unique<PackageConfig>(
+                std::make_shared<PackageConfig>(
                     fs::current_path() / paths::package_config
+                ),
+                std::make_shared<Lockfile>(
+                    fs::current_path() / paths::lockfile
                 )
             };
         }
-        
     }
 }

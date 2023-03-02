@@ -1,5 +1,6 @@
 #include "commands/sync.hpp"
 
+#include "cli/colors.hpp"
 #include "commands/command.hpp"
 #include "commands/install.hpp"
 #include "commands/remove.hpp"
@@ -9,6 +10,8 @@
 #include "script/package_config.hpp"
 #include "semver.hpp"
 #include "util.hpp"
+
+#include "spdlog/fmt/ostr.h"
 
 #include <exception>
 #include <filesystem>
@@ -83,7 +86,8 @@ namespace cpm {
 
             Package package(dir_entry.path().filename().string());
 
-            if (!this->context.repo->contains(package)) {
+            if (!this->context.repo->contains(package) &&
+                !this->context.lockfile->contains(package)) {
                 CPM_LOG_INFO("Found unspecified package {}, removing", package.get_name());
                 unspecified_packages += this->remove_package(package);
             }
@@ -104,7 +108,7 @@ namespace cpm {
                                      const fs::path &output_dir) {
 
         if (this->check_if_installed(package)) {
-            CPM_INFO(package.get_name() + ": Already installed, skipping ...");
+            CPM_INFO("{}: Already installed, skipping ...\n", package.get_name());
             return 0;
         }
         
@@ -127,7 +131,7 @@ namespace cpm {
         CPM_INFO("{}: Not specified, removing ...\n", package.get_name());
         
         std::uintmax_t n = this->delete_all(package);
-        CPM_INFO("    Removed {} entries\n", n);
+        CPM_INFO(RED_FG(" - ") "Removed {} entries\n", n);
 
         return 1;
     }
