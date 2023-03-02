@@ -43,11 +43,15 @@ namespace cpm {
                      (this->context.cwd / paths::package_config).string());
         CPM_INFO("Packages in {}:\n",
                  (this->context.cwd / paths::packages_dir / "").string());
+        int installed = 0;
+        int not_installed = 0;
         for (const auto &package : installed_packages) {
             if (!fs::exists(this->context.cwd / paths::packages_dir / package.get_name())) {
+                not_installed++;
                 CPM_INFO("  {} (not installed)\n", package.string());
-                
+
             } else {
+                installed++;
                 if (this->is_used("--all")) {
                     this->print_deps(package, this->context.cwd / paths::packages_dir / package.get_name() / "");
                 } else {
@@ -58,16 +62,20 @@ namespace cpm {
 
         CPM_LOG_INFO("Listing packages NOT specified in {} ...",
                      (this->context.cwd / paths::package_config).string());
+        int unspecified = 0;
         if (fs::exists(this->context.cwd / paths::packages_dir / "")) {
             for (const auto &dir_entry : fs::directory_iterator(this->context.cwd / paths::packages_dir / "")) {
-
                 Package package(dir_entry.path().filename().string());
-
-                if (installed_packages.find(package) == installed_packages.end()) {
-                    CPM_INFO("  {} (unspecified)\n", package.string());
+                if (!this->context.repo->contains(package) &&
+                    !this->context.lockfile->contains_dep(package)) {
+                    unspecified++;
+                    CPM_INFO("  {} (unspecified)\n", package.get_name());
                 }
             }
         }
+
+        CPM_INFO("\nTotal: {} installed, {} not installed, {} unspecified\n",
+                 installed, not_installed, unspecified);
 
         CPM_LOG_INFO("===== Finished list command. =====");
 	}
@@ -80,7 +88,12 @@ namespace cpm {
         // if (depth > 1) {
         //     CPM_INFO("└─ ");
         // }
-        CPM_INFO("{}\n", package.string());
+        if (depth > 1 && this->context.lockfile->contains(package)) {
+            CPM_INFO("{} (symlinked)\n", package.string());
+            
+        } else {
+            CPM_INFO("{}\n", package.string());
+        }
 
         PackageConfig package_config(dir / paths::package_config);
         auto deps = package_config.list();

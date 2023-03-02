@@ -1,6 +1,7 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+#include "dep-man/lockfile.hpp"
 #include "package.hpp"
 #include "repository.hpp"
 
@@ -14,15 +15,6 @@ namespace fs = std::filesystem;
 
 
 namespace cpm {
-
-	/**
-	 * @brief A struct representing the context a cpm runs in
-	 */
-	struct CommandContext {
-
-		fs::path cwd;
-		std::shared_ptr<Repository<Package, Package::Hash>> repo;
-	};
 
 	/**
 	 * @brief A class representing a cpm command
@@ -51,9 +43,20 @@ namespace cpm {
 
 		protected:
 
+		/**
+		 * @brief A struct representing the context a cpm command
+		 * 		  runs in
+		 */
+		struct Context {
+
+			fs::path cwd;
+			std::shared_ptr<Repository<Package, Package::Hash>> repo;
+			std::shared_ptr<Lockfile> lockfile;
+		};
+
 		Command();
 
-		CommandContext context;
+		Context context;
 	};
 }
 

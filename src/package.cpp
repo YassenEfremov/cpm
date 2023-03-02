@@ -82,6 +82,9 @@ namespace cpm {
 				cpr::Url{(paths::api_url / this->location / this->name / "tags").string()}
 			);
 			json response_json = json::parse(response.text);
+			if (response_json.empty()) {
+				throw std::invalid_argument(fmt::format("{}: package has no valid versions!", this->name));
+			}
 			std::sort(response_json.begin(), response_json.end(),
 				[](const json p1, const json p2) {
 					SemVer v1(p1["name"].get<std::string>());

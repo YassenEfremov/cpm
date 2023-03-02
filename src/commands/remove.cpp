@@ -1,6 +1,7 @@
 #include "commands/remove.hpp"
 
 #include "commands/command.hpp"
+#include "cli/colors.hpp"
 #include "db/package_db.hpp"
 #include "logger/logger.hpp"
 #include "package.hpp"
@@ -78,12 +79,12 @@ namespace cpm {
         );
 
         CPM_LOG_INFO(
-            "Removing package from {} ...\n",
+            "Removing package from {} ...",
             (this->context.cwd / paths::packages_dir / package.get_name() / "").string()
         );
         std::uintmax_t n = this->delete_all(package);
         CPM_LOG_INFO("Removed {} entries", n);
-        CPM_INFO(" \x1b[31m-\x1b[37m Removed {} entries\n", n);
+        CPM_INFO(RED_FG(" - ") "Removed {} entries\n", n);
 
         CPM_LOG_INFO("Removing package from {} ...", paths::package_config.string());
         return this->unregister_package(package);
@@ -100,12 +101,33 @@ namespace cpm {
         std::uintmax_t total_entries = 0;
         if (fs::exists(this->context.cwd / paths::packages_dir /
                        package.get_name() / paths::packages_dir / "")) {
-            for (const auto &dep : fs::directory_iterator(this->context.cwd / paths::packages_dir /
+            for (const auto &dep_path : fs::directory_iterator(this->context.cwd / paths::packages_dir /
                                                         package.get_name() / paths::packages_dir / "")) {
-                total_entries += this->delete_all(Package(dep.path().filename().string()));
+                Package dep(dep_path.path().filename().string());
+                CPM_LOG_INFO("Checking transitive dependency {} ...", dep.get_name());
+                if (this->context.lockfile->contains(dep)) {
+                    CPM_LOG_INFO(
+                        "Transitive dependency {} is required by another package! Skipping ...",
+                        dep.get_name()
+                    );
+                    continue;
+                }
+                total_entries += this->delete_all(dep);
+                this->context.lockfile->remove(dep);
+                CPM_LOG_INFO("Removed transitive dependency {}", dep.get_name());
             }
         }
-        total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
+        CPM_LOG_INFO("{}", this->context.lockfile->contains_dep(package));
+        if (this->context.lockfile->contains_dep(package)) {
+            CPM_LOG_INFO(
+                "Package {} is required by another package! Skipping ...",
+                package.get_name()
+            );
+
+        } else {
+            total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
+            this->context.lockfile->remove(package);
+        }
         return total_entries;
     }
 

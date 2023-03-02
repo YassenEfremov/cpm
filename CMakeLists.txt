@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 0.19.2)
+project(cpm VERSION 0.20.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -9,6 +9,7 @@ configure_file(cmake/version.hpp.in ${PROJECT_BINARY_DIR}/version.hpp)
 
 add_executable(cpm
 	src/cli/parser.cpp
+	src/cli/progress_bar.cpp
 	src/commands/command.cpp
 	src/commands/create.cpp
 	src/commands/install.cpp
@@ -16,6 +17,7 @@ add_executable(cpm
 	src/commands/remove.cpp
 	src/commands/sync.cpp
 	src/db/package_db.cpp
+	src/dep-man/lockfile.cpp
 	src/logger/logger.cpp
 	src/script/package_config.cpp
 	src/main.cpp

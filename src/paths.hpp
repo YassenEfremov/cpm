@@ -26,6 +26,11 @@ namespace cpm::paths {
 	extern const fs::path package_config;
 
 	/**
+	 * @brief The current package lockfile
+	 */
+	extern const fs::path lockfile;
+
+	/**
 	 * @brief The directory in which cpm operates
 	 */
 	extern const fs::path global_dir;

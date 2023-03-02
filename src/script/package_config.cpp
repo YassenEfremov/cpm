@@ -20,12 +20,12 @@ namespace cpm {
 	
 	PackageConfig::PackageConfig(const fs::path &filename) : Repository(filename) {
 		if (fs::exists(this->filename) && !fs::is_empty(this->filename)) {
-			std::ifstream cpm_pack_in(this->filename);
-			this->config_json = nlohmann::ordered_json::parse(cpm_pack_in);
+			std::ifstream package_config_in(this->filename);
+			this->config_json = nlohmann::ordered_json::parse(package_config_in);
 		}
 	}
 
-	int PackageConfig::add(const cpm::Package &package) {
+	int PackageConfig::add(const Package &package) {
 		if (this->contains(package)) {
 			return 0;
 		}
@@ -35,7 +35,7 @@ namespace cpm {
 		return 1;
 	}
 
-	int PackageConfig::remove(const cpm::Package &package) {
+	int PackageConfig::remove(const Package &package) {
 		if (!this->contains(package)) {
 			return 0;
 		}
@@ -45,23 +45,19 @@ namespace cpm {
 		return 1;
 	}
 
-	std::unordered_set<Package, Package::Hash> PackageConfig::list() {
-		std::map<std::string, std::string> package_map;
-		try {
-			package_map = this->config_json["dependencies"].get<std::map<std::string, std::string>>();
-			
-		} catch(const std::exception &e) {
+	std::unordered_set<Package, Package::Hash> PackageConfig::list() const {
+		if (!this->config_json.contains("dependencies")) {
 			return std::unordered_set<Package, Package::Hash>();
 		}
 
 		std::unordered_set<Package, Package::Hash> packages;
-		for (const auto &[name, version_str] : package_map) {
-			packages.insert(Package(name, SemVer(version_str)));
+		for (const auto &[name, content] : this->config_json["dependencies"].items()) {
+			packages.insert(Package(name, SemVer(content.get<std::string>())));
 		}
 		return packages;
 	}
 
-	bool PackageConfig::contains(const Package &package) {
+	bool PackageConfig::contains(const Package &package) const {
 		if (this->list().find(package) != this->list().end()) {
 			return true;
 		} else {
@@ -69,7 +65,7 @@ namespace cpm {
 		}
 	}
 
-	Package PackageConfig::create() {
+	Package PackageConfig::create_default() {
 		std::string default_package_name = fs::current_path().stem().string();
 		SemVer default_package_version("0.1.0");
         this->config_json["name"] = default_package_name;
@@ -83,7 +79,7 @@ namespace cpm {
 	}
 
 	void PackageConfig::save() {
-		std::ofstream cpm_pack_out(this->filename);
-		cpm_pack_out << std::setw(4) << this->config_json;
+		std::ofstream package_config_out(this->filename);
+		package_config_out << std::setw(4) << this->config_json;
 	}
 }
