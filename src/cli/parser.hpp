@@ -9,28 +9,28 @@
 
 namespace cpm {
 
+/**
+ * @brief A class representing the cpm parser
+ */
+class Parser {
+
+	public:
+
 	/**
-	 * @brief A class representing the cpm parser
+	 * @brief A map containing the command names and their corresponding objects
 	 */
-	class Parser {
+	static std::map<std::string, Command *> commands;
 
-		public:
+	/**
+	 * @brief Parse command line arguments
+	 * 
+	 * @param argc the number of arguments (equivelent to main's argc)
+	 * @param argv a list of the arguments (equivelent to main's argv)
+	 */
+	static void parse_args(int argc, char *argv[]);
+};
 
-		/**
-		 * @brief A map containing the command names and their corresponding objects
-		 */
-		static std::map<std::string, Command *> commands;
-
-		/**
-		 * @brief Parse command line arguments
-		 * 
-		 * @param argc the number of arguments (equivelent to main's argc)
-		 * @param argv a list of the arguments (equivelent to main's argv)
-		 */
-		static void parse_args(int argc, char *argv[]);
-	};
-
-}
+} // namespace cpm
 
 
 #endif	// PARSER_H

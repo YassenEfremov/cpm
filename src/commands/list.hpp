@@ -11,39 +11,40 @@ namespace fs = std::filesystem;
 
 namespace cpm {
 
+/**
+ * @brief A class representing the cpm list command
+ * 
+ * This command lists all of the installed packages
+ */
+class ListCommand : public Command {
+
+	public:
+
 	/**
-	 * @brief A class representing the cpm list command
+	 * @brief Constructor for list command
 	 * 
-	 * This command lists all of the installed packages
+	 * @param name the name of the command
 	 */
-	class ListCommand : public Command {
+	ListCommand(const std::string &name);
 
-		public:
-
-		/**
-		 * @brief Constructor for list command
-		 * 
-		 * @param name the name of the command
-		 */
-		ListCommand(const std::string &name);
-
-		/**
-		 * @brief List all of the installed packages
-		 */
-		void run() override;
+	/**
+	 * @brief List all of the installed packages
+	 */
+	void run() override;
 
 
-		private:
+	private:
 
-		/**
-		 * @brief Print the dependencies of the specified package
-		 * 
-		 * @param package a package
-		 * @param dir the directory where the package is installed
-		 */
-		void print_deps(const Package &package, const fs::path dir);
-	};
-}
+	/**
+	 * @brief Print the dependencies of the specified package
+	 * 
+	 * @param package a package
+	 * @param dir the directory where the package is installed
+	 */
+	void print_deps(const Package &package, const fs::path dir);
+};
+
+} // namespace cpm
 
 
 #endif	// LIST_H

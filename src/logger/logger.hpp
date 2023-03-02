@@ -16,37 +16,38 @@
 
 namespace cpm {
 
-	/**
-	 * @brief The cpm console logger
-	 */
-	class CLILogger {
+/**
+ * @brief The cpm console logger
+ */
+class CLILogger {
 
-		public:
-
-		/**
-		 * @brief Initialize the logger
-		 */
-		static void init();
-
-        static std::shared_ptr<spdlog::logger> get_stdout_logger();
-        static std::shared_ptr<spdlog::logger> get_stderr_logger();
-	};
+	public:
 
 	/**
-	 * @brief The cpm rotating file logger
+	 * @brief Initialize the logger
 	 */
-	class FileLogger {
+	static void init();
 
-		public:
+	static std::shared_ptr<spdlog::logger> get_stdout_logger();
+	static std::shared_ptr<spdlog::logger> get_stderr_logger();
+};
 
-		/**
-		 * @brief Initialize the logger
-		*/
-		static void init();
+/**
+ * @brief The cpm rotating file logger
+ */
+class FileLogger {
 
-        static std::shared_ptr<spdlog::logger> get_file_logger();
-	};
-}
+	public:
+
+	/**
+	 * @brief Initialize the logger
+	*/
+	static void init();
+
+	static std::shared_ptr<spdlog::logger> get_file_logger();
+};
+
+} // namespace cpm
 
 
 #endif	// LOGGER_H
