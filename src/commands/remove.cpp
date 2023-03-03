@@ -99,25 +99,24 @@ bool RemoveCommand::check_if_not_installed(const Package &package) {
 
 std::uintmax_t RemoveCommand::delete_all(const Package &package) {
     std::uintmax_t total_entries = 0;
-    if (fs::exists(this->context.cwd / paths::packages_dir /
-                    package.get_name() / paths::packages_dir / "")) {
+    this->context.lockfile->remove(package);
+    if (fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / paths::packages_dir / "")) {
         for (const auto &dep_path : fs::directory_iterator(this->context.cwd / paths::packages_dir /
-                                                    package.get_name() / paths::packages_dir / "")) {
+                                                           package.get_name() / paths::packages_dir / "")) {
             Package dep(dep_path.path().filename().string());
             CPM_LOG_INFO("Checking transitive dependency {} ...", dep.get_name());
-            if (this->context.lockfile->contains(dep)) {
+            if (this->context.repo->contains(dep) || this->context.lockfile->contains_dep(dep)) {
                 CPM_LOG_INFO(
                     "Transitive dependency {} is required by another package! Skipping ...",
                     dep.get_name()
                 );
                 continue;
             }
-            total_entries += this->delete_all(dep);
             this->context.lockfile->remove(dep);
+            total_entries += this->delete_all(dep);
             CPM_LOG_INFO("Removed transitive dependency {}", dep.get_name());
         }
     }
-    CPM_LOG_INFO("{}", this->context.lockfile->contains_dep(package));
     if (this->context.lockfile->contains_dep(package)) {
         CPM_LOG_INFO(
             "Package {} is required by another package! Skipping ...",
@@ -126,7 +125,7 @@ std::uintmax_t RemoveCommand::delete_all(const Package &package) {
 
     } else {
         total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
-        this->context.lockfile->remove(package);
+        // this->context.lockfile->remove(package);
     }
     return total_entries;
 }

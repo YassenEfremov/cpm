@@ -33,7 +33,8 @@ void ListCommand::run() {
     auto installed_packages = this->context.repo->list();
 
     CPM_LOG_INFO("Checking if there are any packages installed ...");
-    if (installed_packages.empty()) {
+    if (installed_packages.empty() && (!fs::exists(this->context.cwd / paths::packages_dir / "") ||
+                                       fs::is_empty(this->context.cwd / paths::packages_dir / ""))) {
         CPM_LOG_INFO("Set of installed packages is empty!");
         CPM_INFO("No packages installed!\n");
         return;

@@ -20,9 +20,7 @@ namespace cpm {
  * This command parses the current package config and installs/removes the
  * package dependencies listed in there
  */
-class SyncCommand : virtual public Command,
-					public InstallCommand,
-					public RemoveCommand {
+class SyncCommand : public InstallCommand, public RemoveCommand {
 
 	public:
 

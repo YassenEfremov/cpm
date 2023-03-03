@@ -87,7 +87,7 @@ void SyncCommand::run() {
         Package package(dir_entry.path().filename().string());
 
         if (!this->context.repo->contains(package) &&
-            !this->context.lockfile->contains(package)) {
+            !this->context.lockfile->contains_dep(package)) {
             CPM_LOG_INFO("Found unspecified package {}, removing", package.get_name());
             unspecified_packages += this->remove_package(package);
         }

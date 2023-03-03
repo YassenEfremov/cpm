@@ -71,7 +71,7 @@ void Parser::parse_args(int argc, char *argv[]) {
 
     static SyncCommand sync_command("sync");
     sync_command.add_description(
-        "Install the package/s specified in the current package config"
+        "Synchronize dependencies with the current package config"
     );
 
 
