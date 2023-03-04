@@ -19,23 +19,29 @@ class ProgressBar {
 	 *		  new progress bar and sets it as the active stage.
 	 * 
 	 * @param title the title of the first stage
+	 * @param width the width of the first stage progress bar
+	 * @param symbol the symbol with which to fill the progress bar
 	 * @param max_value the maximum value of the first stage progress bar. By
 	 * 		  default it is 0, which means that the maximum value is unknown. In
 	 * 		  that case the progress bar circles through infinitely to simulate
 	 * 		  progress.
 	 */
-	ProgressBar(const std::string &title, int max_value = 0);
+	ProgressBar(const std::string &title, int width, char symbol,
+				int max_value = 0);
 
 	/**
 	 * @brief Add a new stage to the current progress bar
 	 * 
 	 * @param title the title of the new stage
+	 * @param width the width of the first stage progress bar
+	 * @param symbol the symbol with which to fill the progress bar
 	 * @param max_value the maximum value of the new stage progress bar. By
 	 * 		  default it is 0, which means that the maximum value is unknown. In
 	 * 		  that case the progress bar circles through infinitely to simulate
 	 * 		  progress.
 	 */
-	void add_stage(const std::string &title, int max_value = 0);
+	void add_stage(const std::string &title, int width, char symbol,
+				   int max_value = 0);
 
 	/**
 	 * @brief Print the active progress bar stage
@@ -82,22 +88,23 @@ class ProgressBar {
 		 * @brief Constructor for progress bar stage
 		 * 
 		 * @param title the title of the new stage
+		 * @param width the width of the first stage progress bar
+		 * @param symbol the symbol with which to fill the progress bar
 		 * @param max_value the maximum value of the new stage progress bar. By
 		 * 		  default it is 0, which means that the maximum value is
 		 * 		  unknown. In that case the progress bar circles through
 		 * 		  infinitely to simulate progress.
 		 */
-		Stage(const std::string &title, int max_value = 0);
+		Stage(const std::string &title, int width, char symbol,
+			  int max_value = 0);
 
 		std::string title;
 		std::string bar;
 		std::string suffix;	
-		// int width;
-		// char symbol;
+		int width;
+		char symbol;
 		int max_value;
 		int value;
-
-		private:
 	};
 
 	std::vector<Stage> stages;

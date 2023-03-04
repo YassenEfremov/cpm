@@ -107,9 +107,11 @@ bool Lockfile::contains(const Package &package) const {
 
 bool Lockfile::contains_dep(const Package &package) {
 	for (const auto &dep : this->lockfile_json["dependencies"]) {
-		for (const auto &[name, version] : dep["dependencies"].items()) {
-			if(name == package.get_name()) {
-				return true;
+		if (dep.contains("dependencies")) {
+			for (const auto &[name, version] : dep["dependencies"].items()) {
+				if(name == package.get_name()) {
+					return true;
+				}
 			}
 		}
 	}

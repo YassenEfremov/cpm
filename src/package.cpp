@@ -11,8 +11,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <functional>
-#include <map>
-#include <memory>
 #include <string>
 
 #include <cstddef>
@@ -28,19 +26,14 @@ std::size_t Package::Hash::operator()(const Package &package) const noexcept {
 	return h1 << 1;
 }
 
-Package::Package(const std::string &name)
-	: name(name), dependencies(std::make_shared<std::unordered_set<Package, Package::Hash>>()) {}
+Package::Package(const std::string &name) : name(name) {}
 
 Package::Package(const std::string &name, const SemVer &version)
-	: name(name), version(version), dependencies(std::make_shared<std::unordered_set<Package, Package::Hash>>()) {}
+	: name(name), version(version) {}
 
 std::string Package::get_name() const { return this->name; }
 SemVer Package::get_version() const { return this->version; }
 std::string Package::get_location() const { return this->location; }
-
-std::shared_ptr<std::unordered_set<Package, Package::Hash>> Package::get_dependencies() const {
-	return this->dependencies;
-}
 
 std::string Package::string() const {
 	return fmt::format("{}@{}", this->name, this->version.string());

@@ -3,9 +3,7 @@
 
 #include "semver.hpp"
 
-#include <memory>
 #include <string>
-#include <unordered_set>
 
 #include <cstddef>
 
@@ -60,14 +58,6 @@ class Package {
 	std::string get_location() const;
 
 	/**
-	 * @brief Getter for dependencies
-	 * 
-	 * @return The package's dependencies
-	 */
-	std::shared_ptr<std::unordered_set<Package, Package::Hash>>
-	get_dependencies() const;
-
-	/**
 	 * @brief Get the package as a string
 	 * 
 	 * @return The package as a string
@@ -91,7 +81,6 @@ class Package {
 	std::string description;
 	std::string author;
 	std::string license;
-	std::shared_ptr<std::unordered_set<Package, Package::Hash>> dependencies;
 };
 
 } // namespace cpm

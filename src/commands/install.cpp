@@ -195,9 +195,11 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
                 CPM_LOG_INFO("Dependency {} is already satisfied! Skipping ...", current_package.get_name());
                 all_progress.insert({
                     current_package,
-                    ProgressBar(fmt::format(
-                        " * {:<25}{:>15}", current_package.string(), "(Skipping)"
-                    ))
+                    ProgressBar(
+                        fmt::format(" * {:<25}{:>15}",
+                                    current_package.string(), "(Skipping)"),
+                        10, '#'
+                    )
                 });
                 all_progress.at(current_package).set_active_bar("   [   done   ]");
                 all_progress.at(current_package).update_suffix(" satisfied");
@@ -209,27 +211,26 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
             CPM_LOG_INFO("downloading package {} ...", current_package.string());
             all_progress.insert({
                 current_package,
-                ProgressBar(fmt::format(
-                    BLUE_FG(" v ") "{:<25}{:>15}",
-                    current_package.string(), "(Downloading)"
-                ))
+                ProgressBar(
+                    fmt::format(BLUE_FG(" v ") "{:<25}{:>15}",
+                                current_package.string(), "(Downloading)"),
+                    10, '#'
+                )
             });
             cpr::Response response = this->download_package(current_package, location,
                 [=, &all_progress](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
-                                    cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
+                                   cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow, std::intptr_t userdata) {
                     double downloaded = static_cast<double>(downloadNow);
                     double total = static_cast<double>(downloadTotal);
-                    std::string unit = "B";
-                    if (downloadNow >= 1000000) {
-                        downloaded /= 1000000;
-                        total /= 1000000;
-                        unit = "MB";
-
-                    } else if (downloadNow >= 1000) {
-                        downloaded /= 1000;
-                        total /= 1000;
-                        unit = "KB";
-                    }
+                    std::string unit = downloadNow >= 1e+6 ? "MB"
+                                     : downloadNow >= 1e+3 ? "KB"
+                                     : "B";
+                    downloaded /= downloadNow >= 1e+6 ? 1e+6
+                                : downloadNow >= 1e+3 ? 1e+3
+                                : 1;
+                    total /= downloadNow >= 1e+6 ? 1e+6
+                           : downloadNow >= 1e+3 ? 1e+3
+                           : 1;
                     if (total < downloaded) {
                         total = downloaded;
                     }
@@ -241,7 +242,7 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
                     return true;
                 }
             );
-            CPM_LOG_INFO("download complete, total: {} KB", response.text.size() / 1000);
+            CPM_LOG_INFO("download complete, total: {} KB", response.text.size() / 1e+3);
             all_progress.at(current_package).set_active_bar("   [   done   ]");
             refresh_all_progress();
 
@@ -249,10 +250,11 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
             struct zip_t *zip = zip_stream_open(response.text.c_str(), response.text.size(), 0, 'r');
             std::size_t total_entries = zip_entries_total(zip);
             zip_stream_close(zip);
-            all_progress.at(current_package).add_stage(fmt::format(
-                GREEN_FG(" + ") "{:<25}{:>15}",
-                current_package.string(), "(Extracting)"
-            ), total_entries);
+            all_progress.at(current_package).add_stage(
+                fmt::format(GREEN_FG(" + ") "{:<25}{:>15}",
+                            current_package.string(), "(Extracting)"),
+                10, '#', total_entries
+            );
             this->extract_package(response.text,
                 this->context.cwd / paths::packages_dir / current_package.get_name(),
                 [=, &all_progress](int currentEntry, int totalEntries) {
@@ -285,14 +287,12 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
             output_dir / package.get_name() / paths::packages_dir / name
         );
         CPM_LOG_INFO("symlink created");
-    }
 
-    for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
         this->context.lockfile->add(Package(name, content["version"].get<std::string>()));
         if (content.contains("dependencies")) {
             for (const auto &[dep_name, dep_version] : content["dependencies"].items()) {
                 this->context.lockfile->add_dep(Package(name, content["version"].get<std::string>()),
-                                    Package(dep_name, dep_version.get<std::string>()));
+                                                Package(dep_name, dep_version.get<std::string>()));
                 CPM_LOG_INFO("symlinking transitive dependency: {} ...", dep_name);
                 fs::create_directory(output_dir / name / paths::packages_dir);
                 fs::create_directory_symlink(

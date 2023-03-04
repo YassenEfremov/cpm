@@ -1,21 +1,20 @@
 #include "cli/progress_bar.hpp"
 
-#include "util.hpp"
-
 #include <iostream>
 #include <string>
 #include <vector>
-#include "progress_bar.hpp"
 
 
 namespace cpm {
 
-ProgressBar::ProgressBar(const std::string &title, int max_value)
-	: stages({Stage(title, max_value)}),
-		active_stage(Stage(title, max_value)) {}
+ProgressBar::ProgressBar(const std::string &title, int width, char symbol,
+						 int max_value)
+	: stages({Stage(title, width, symbol, max_value)}),
+	  active_stage(Stage(title, width, symbol, max_value)) {}
 
-void ProgressBar::add_stage(const std::string &title, int max_value) {
-	Stage new_stage(title, max_value);
+void ProgressBar::add_stage(const std::string &title, int width, char symbol,
+						 	int max_value) {
+	Stage new_stage(title, width, symbol, max_value);
 	this->stages.push_back(new_stage);
 	this->active_stage = new_stage;
 }
@@ -66,19 +65,20 @@ ProgressBar ProgressBar::operator--(int) {
 void ProgressBar::fill_bar() {
 	std::string new_bar = "   [";
 	if (this->active_stage.max_value != 0) {
-		double step = static_cast<double>(this->active_stage.max_value) / 10;
+		double step = static_cast<double>(this->active_stage.max_value) /
+										  this->active_stage.width;
 		for (double i = 0; i < this->active_stage.max_value; i += step) {
 			if (i < this->active_stage.value) {
-				new_bar += "#";
+				new_bar += this->active_stage.symbol;
 			} else {
 				new_bar += " ";
 			}
 		}
 
 	} else {
-		for (int i = 0; i < 10; i++) {
-			if (i == this->active_stage.value % 10) {
-				new_bar += "#";
+		for (int i = 0; i < this->active_stage.width; i++) {
+			if (i == this->active_stage.value % this->active_stage.width) {
+				new_bar += this->active_stage.symbol;
 			} else {
 				new_bar += " ";
 			}
@@ -88,7 +88,13 @@ void ProgressBar::fill_bar() {
 	this->active_stage.bar = new_bar;
 }
 
-ProgressBar::Stage::Stage(const std::string &title, int max_value)
-	: title(title), bar("   [          ]"), max_value(max_value), value(0) {}
+ProgressBar::Stage::Stage(const std::string &title, int width, char symbol,
+			  			  int max_value)
+	: title(title),
+	  bar("   [          ]"),
+	  width(width),
+	  symbol(symbol),
+	  max_value(max_value),
+	  value(0) {}
 
 } // namespace cpm

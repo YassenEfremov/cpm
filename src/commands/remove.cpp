@@ -112,7 +112,6 @@ std::uintmax_t RemoveCommand::delete_all(const Package &package) {
                 );
                 continue;
             }
-            this->context.lockfile->remove(dep);
             total_entries += this->delete_all(dep);
             CPM_LOG_INFO("Removed transitive dependency {}", dep.get_name());
         }

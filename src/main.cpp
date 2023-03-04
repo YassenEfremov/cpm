@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         if (timed_commands.find(argv[1]) != timed_commands.end()) {
             auto command = [&]() { cpm::Parser::commands[argv[1]]->run(); };
             auto execution_time = time_execution(command);
-            if (execution_time < 1000ms) {
+            if (execution_time < 1s) {
                 CPM_INFO("Finished in {}ms\n",
                          execution_time.count());
             } else {
