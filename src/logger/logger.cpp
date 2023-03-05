@@ -36,7 +36,7 @@ std::shared_ptr<spdlog::logger> CLILogger::get_stderr_logger() {
 void FileLogger::init() {
 	auto file_logger = spdlog::rotating_logger_mt(
 		"file_logger",
-		(cpm::paths::global_dir / "logs" / "cpm.log").string(),
+		(paths::global_dir / paths::logs_dir / paths::log_base_name).string(),
 		1024 * 1024 * 5, 3
 	);
 }

@@ -124,7 +124,6 @@ std::uintmax_t RemoveCommand::delete_all(const Package &package) {
 
     } else {
         total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.get_name() / "");
-        // this->context.lockfile->remove(package);
     }
     return total_entries;
 }

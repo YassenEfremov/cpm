@@ -89,8 +89,8 @@ void ListCommand::print_deps(const Package &package, const fs::path dir) {
     // if (depth > 1) {
     //     CPM_INFO("└─ ");
     // }
-    if (depth > 1 && this->context.lockfile->contains(package)) {
-        CPM_INFO("{} (symlinked)\n", package.string());
+    if (depth > 1 && this->context.repo->contains(package)) {
+        CPM_INFO("{} (duplicate)\n", package.string());
         
     } else {
         CPM_INFO("{}\n", package.string());

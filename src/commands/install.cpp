@@ -157,7 +157,7 @@ bool InstallCommand::check_if_installed(const Package &package) {
 }
 
 void InstallCommand::install_all(const Package &package, const std::string &location,
-                                    const fs::path &output_dir) {
+                                 const fs::path &output_dir) {
 
     CPM_LOG_INFO("obtaining lockfile for package {} ...", package.get_name());
     CPM_INFO( BLUE_FG(" v ") "Obtaining lockfile ...");
@@ -174,6 +174,12 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
         for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
             packages_to_install.insert(Package(name, SemVer(content["version"].get<std::string>())));
         }
+
+    } else {
+        throw std::runtime_error(fmt::format(
+            "{}: package doesn't contain a {} file!",
+            package.get_name(), paths::lockfile.string()
+        ));
     }
     std::cout << " done.\n";
 

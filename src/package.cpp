@@ -62,9 +62,11 @@ void Package::init() {
 						 response.status_code, package_location);
 			this->location = package_location;
 			break;
+
+		} else {
+			CPM_LOG_INFO("Failed (status {}) {}",
+						 response.status_code, package_location);
 		}
-		CPM_LOG_INFO("Failed (status {}) {}",
-					 response.status_code, package_location);
 	}
 	if (this->location.empty()) {
 		throw std::invalid_argument(fmt::format("{}: package not found!", this->name));
@@ -82,6 +84,12 @@ void Package::init() {
 			std::string package_config_str = util::base64_decode(response_json["content"].get<std::string>());
 			package_config_json = json::parse(package_config_str);
 			this->version = SemVer(package_config_json["version"].get<std::string>());
+
+		} else {
+			throw std::runtime_error(fmt::format(
+				"{}: package doesn't contain a {} file!",
+				this->name, paths::package_config.string()
+			));
 		}
 
 	} else {

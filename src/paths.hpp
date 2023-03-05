@@ -41,6 +41,16 @@ extern const fs::path global_dir;
 extern const fs::path package_locations;
 
 /**
+ * @brief The directory in which logs are stored
+ */
+extern const fs::path logs_dir;
+
+/**
+ * @brief The base name of the log files
+ */
+extern const fs::path log_base_name;
+
+/**
  * @brief The API URL which cpm should use to download packages
  */
 extern const fs::path api_url;
