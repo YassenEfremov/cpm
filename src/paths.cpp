@@ -24,8 +24,14 @@ const fs::path global_dir = std::getenv("LOCALAPPDATA") / fs::path("cpm");
 const fs::path global_dir = std::getenv("HOME") / fs::path(".local/share/cpm");
 #endif
 
+const fs::path package_locations = "package_locations.json";
+
 const fs::path api_url = "https://api.github.com/repos";
 
-const fs::path package_locations = "package_locations.json";
+const fs::path gh_zip = "zipball";
+
+const fs::path gh_tags = "tags";
+
+const fs::path gh_content = "contents";
 
 } // namespace cpm::paths

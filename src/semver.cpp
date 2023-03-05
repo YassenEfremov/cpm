@@ -1,5 +1,7 @@
 #include "semver.hpp"
 
+#include "spdlog/fmt/ostr.h"
+
 #include "util.hpp"
 
 #include <stdexcept>
@@ -8,36 +10,27 @@
 
 namespace cpm {
 
-SemVer::SemVer() : major(0), minor(0), patch(0), suffix("") {}
+SemVer::SemVer() : major(0), minor(0), patch(0) {}
 
-SemVer::SemVer(int major, int minor, int patch, const std::string &suffix)
-	: major(major), minor(minor), patch(patch), suffix(suffix) {}
+SemVer::SemVer(int major, int minor, int patch)
+	: major(major), minor(minor), patch(patch) {}
 
 SemVer::SemVer(const std::string &version_str) {
 	auto tokens = util::split_string(version_str, ".");
-	if (tokens.size() < 3) {
+	if (tokens.size() != 3) {
 		throw std::invalid_argument(version_str + ": invalid version string!");
 	}
 	this->major = std::stoi(tokens[0]);
 	this->minor = std::stoi(tokens[1]);
 	this->patch = std::stoi(tokens[2]);
-	this->suffix = "";
 }
 
 int SemVer::get_major() const { return this->major; }
 int SemVer::get_minor() const { return this->minor; }
 int SemVer::get_patch() const { return this->patch; }
-std::string SemVer::get_suffix() const { return this->suffix; }
 
 std::string SemVer::string() const {
-	std::string str = std::to_string(this->major) + "." +
-						std::to_string(this->minor) + "." +
-						std::to_string(this->patch);
-	
-	if (!this->suffix.empty()) {
-		str += "-" + this->suffix; 
-	}
-	return str;
+	return fmt::format("{}.{}.{}", this->major, this->minor, this->patch);
 }
 
 bool SemVer::is_specified() {

@@ -8,9 +8,10 @@
 #include "nlohmann/json.hpp"
 #include "spdlog/fmt/ostr.h"
 
-#include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <functional>
+#include <stdexcept>
 #include <string>
 
 #include <cstddef>
@@ -58,12 +59,12 @@ void Package::init() {
 		);
 		if (response.status_code == cpr::status::HTTP_OK) {
 			CPM_LOG_INFO("Success (status {}) using {}",
-							response.status_code, package_location);
+						 response.status_code, package_location);
 			this->location = package_location;
 			break;
 		}
 		CPM_LOG_INFO("Failed (status {}) {}",
-						response.status_code, package_location);
+					 response.status_code, package_location);
 	}
 	if (this->location.empty()) {
 		throw std::invalid_argument(fmt::format("{}: package not found!", this->name));
@@ -72,29 +73,22 @@ void Package::init() {
 	if (!this->version.is_specified()) {
 		CPM_LOG_INFO("Getting latest version for package {} ...", this->name);
 		cpr::Response response = cpr::Get(
-			cpr::Url{(paths::api_url / this->location / this->name / "tags").string()}
+			cpr::Url{(paths::api_url / location / this->name /
+					  paths::gh_content / paths::package_config).string()}
 		);
-		json response_json = json::parse(response.text);
-		if (response_json.empty()) {
-			throw std::invalid_argument(fmt::format(
-				"{}: package has no valid versions!", this->name
-			));
+		json package_config_json;
+		if (response.status_code == cpr::status::HTTP_OK) {
+			json response_json = json::parse(response.text);
+			std::string package_config_str = util::base64_decode(response_json["content"].get<std::string>());
+			package_config_json = json::parse(package_config_str);
+			this->version = SemVer(package_config_json["version"].get<std::string>());
 		}
-		std::sort(response_json.begin(), response_json.end(),
-			[](const json p1, const json p2) {
-				SemVer v1(p1["name"].get<std::string>());
-				SemVer v2(p2["name"].get<std::string>());
-
-				return v1 > v2;
-			}
-		);
-		this->version = SemVer(response_json[0]["name"].get<std::string>());
 
 	} else {
 		CPM_LOG_INFO("Checking version {} for package {}", this->version.string(), this->name);
 		cpr::Response response = cpr::Head(
 			cpr::Url{(paths::api_url / this->location / this->name /
-					 "zipball" / this->version.string()).string()}
+					  paths::gh_zip / this->version.string()).string()}
 		);
 		if (response.status_code != cpr::status::HTTP_OK) {
 			throw std::invalid_argument(fmt::format(

@@ -164,7 +164,7 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
     std::unordered_set<Package, Package::Hash> packages_to_install{package};
     cpr::Response response = cpr::Get(
         cpr::Url{(paths::api_url / location / package.get_name() /
-                    "contents" / paths::lockfile).string()}
+                  paths::gh_content / paths::lockfile).string()}
     );
     json package_lockfile_json;
     if (response.status_code == cpr::status::HTTP_OK) {
@@ -314,13 +314,13 @@ cpr::Response InstallCommand::download_package(
     )> download_progress
 ) {
     CPM_LOG_INFO(
-        "GET {}/{}/{}/zipball/{}",
-        paths::api_url.string(), location,
+        "GET {}/{}/{}/{}/{}",
+        paths::api_url.string(), location, paths::gh_zip,
         package.get_name(), package.get_version().string()
     );
     cpr::Response response = cpr::Get(
         cpr::Url{(paths::api_url / location / package.get_name() /
-                    "zipball" / package.get_version().string()).string()},
+                  paths::gh_zip / package.get_version().string()).string()},
         cpr::ProgressCallback(download_progress)
     );
     CPM_LOG_INFO("Response status: {}", response.status_code);

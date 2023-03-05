@@ -14,22 +14,21 @@ class SemVer {
 	public:
 
 	/**
-	 * @brief Default constructor for generic semantic verion
+	 * @brief Default constructor for generic semantic version
 	 */
 	SemVer();
 
 	/**
-	 * @brief Constructor for generic semantic verion
+	 * @brief Constructor for generic semantic version
 	 * 
 	 * @param major the major version
 	 * @param minor the minor version
 	 * @param patch the patch version
-	 * @param suffix a suffix (alpha, beta, rc-1, etc.)
 	 */
-	SemVer(int major, int minor, int patch, const std::string &suffix);
+	SemVer(int major, int minor, int patch);
 
 	/**
-	 * @brief Constructor for generic semantic verion
+	 * @brief Constructor for generic semantic version
 	 * 
 	 * @param version_str a semantic version as a string
 	 */
@@ -55,13 +54,6 @@ class SemVer {
 	 * @return The patch version
 	 */
 	int get_patch() const;
-	
-	/**
-	 * @brief Getter for suffix
-	 * 
-	 * @return The suffix
-	 */
-	std::string get_suffix() const;
 
 	/**
 	 * @brief Get the semantic version as a string
@@ -74,7 +66,7 @@ class SemVer {
 	 * @brief Check if the version is different from the default one
 	 * 
 	 * @return true if the version is not the default one, false otherwise
-	*/
+	 */
 	bool is_specified();
 
 	friend bool operator<(const SemVer &lhs, const SemVer &rhs);
@@ -91,7 +83,6 @@ class SemVer {
 	int major;
 	int minor;
 	int patch;
-	std::string suffix;
 };
 
 } // namespace cpm

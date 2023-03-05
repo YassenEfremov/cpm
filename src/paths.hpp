@@ -35,15 +35,30 @@ extern const fs::path lockfile;
 extern const fs::path global_dir;
 
 /**
- * @brief The API url which cpm should use to download packages
- */
-extern const fs::path api_url;
-
-/**
  * @brief The file which contains the locations where cpm should search for
  * 		  packages
  */
 extern const fs::path package_locations;
+
+/**
+ * @brief The API URL which cpm should use to download packages
+ */
+extern const fs::path api_url;
+
+/**
+ * @brief GitHub API identifier for zip archive
+ */
+extern const fs::path gh_zip;
+
+/**
+ * @brief GitHub API identifier for repo tags
+ */
+extern const fs::path gh_tags;
+
+/**
+ * @brief GitHub API identifier for repo contents
+ */
+extern const fs::path gh_content;
 
 } // namespace cpm::paths
 
