@@ -70,6 +70,21 @@ void Package::init() {
 		throw std::invalid_argument(fmt::format("{}: package not found!", this->name));
 	}
 
+	CPM_LOG_INFO("Checking version tags of package {} ...", this->name);
+	cpr::Response response = cpr::Get(
+		cpr::Url{(paths::api_url / location / this->name /
+					paths::gh_tags).string()}
+	);
+	json tags_json;
+	if (response.status_code == cpr::status::HTTP_OK) {
+		json tags_json = json::parse(response.text);
+		if (tags_json.empty()) {
+			throw std::runtime_error(fmt::format(
+				"{}: package doesn't have any valid versions!", this->name
+			));
+		}
+	}
+
 	if (!this->version.is_specified()) {
 		CPM_LOG_INFO("Getting latest version for package {} ...", this->name);
 		cpr::Response response = cpr::Get(

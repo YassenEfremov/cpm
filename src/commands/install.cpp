@@ -175,11 +175,6 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
             packages_to_install.insert(Package(name, SemVer(content["version"].get<std::string>())));
         }
 
-    } else {
-        throw std::runtime_error(fmt::format(
-            "{}: package doesn't contain a {} file!",
-            package.get_name(), paths::lockfile.string()
-        ));
     }
     std::cout << " done.\n";
 
@@ -284,6 +279,9 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
 
     this->context.lockfile->add(package);
 
+    if (packages_to_install.size() < 2) {
+        return;
+    }
     for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
         this->context.lockfile->add_dep(package, Package(name, content["version"].get<std::string>()));
         CPM_LOG_INFO("symlinking direct dependency: {} ...", name);
@@ -330,6 +328,12 @@ cpr::Response InstallCommand::download_package(
         cpr::ProgressCallback(download_progress)
     );
     CPM_LOG_INFO("Response status: {}", response.status_code);
+    if (response.status_code != cpr::status::HTTP_OK) {
+        throw std::runtime_error(fmt::format(
+            "{}: version {} not found!",
+            package.get_name(), package.get_version().string()
+        ));
+    }
 
     return response;
 }
