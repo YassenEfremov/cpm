@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 0.20.5)
+project(cpm VERSION 0.20.6)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)

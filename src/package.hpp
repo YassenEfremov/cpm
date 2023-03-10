@@ -25,16 +25,9 @@ class Package {
 	 * @brief Constructor for package
 	 * 
 	 * @param name the name of the package
+	 * @param version the package version (optional)
 	 */
-	Package(const std::string &name);
-
-	/**
-	 * @brief Constructor for package
-	 * 
-	 * @param name the name of the package
-	 * @param version the package version
-	 */
-	Package(const std::string &name, const SemVer &version);
+	Package(const std::string &name, const SemVer &version = SemVer());
 
 	/**
 	 * @brief Getter for name

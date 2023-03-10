@@ -27,8 +27,6 @@ std::size_t Package::Hash::operator()(const Package &package) const noexcept {
 	return h1 << 1;
 }
 
-Package::Package(const std::string &name) : name(name) {}
-
 Package::Package(const std::string &name, const SemVer &version)
 	: name(name), version(version) {}
 
