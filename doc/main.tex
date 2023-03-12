@@ -1,10 +1,10 @@
-\documentclass[14pt]{extreport}
+\documentclass[14pt, a4paper]{extreport}
 
+\usepackage[margin=3cm]{geometry}
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[main=bulgarian, english]{babel}
 \usepackage{graphicx}
-\graphicspath{ {./images/} }
 
 \usepackage{xcolor}
 \definecolor{comment}{HTML}{7F848E}
@@ -27,12 +27,31 @@
     pdfpagemode=FullScreen,
 }
 
+\usepackage[acronym, toc]{glossaries}
+\makenoidxglossaries
+\newacronym{api}{API}{Application Programming Interface}
+\newacronym{crud}{CRUD}{Create, Read, Update, Delete}
+\newacronym{db}{DB}{Database}
+\newacronym{gnu}{GNU}{GNU's not Unix!}
+\newacronym{graphql}{GraphQL}{Graph Query Language}
+\newacronym{http}{HTTP}{Hyper Text Transfer Protocol}
+\newacronym{json}{JSON}{JavaScript Object Notation}
+\newacronym{os}{OS}{}
+\newacronym{raii}{RAII}{Resource Acquisition Is Initialization}
+\newacronym{rest}{REST}{Representational State Transfer}
+\newacronym{yaml}{YAML}{YAML Ain't Markup Language}
+\newacronym{oop}{ООП}{Обектно-Ориентирано Програмиране}
+% \item[cpm] - C/C++ Package Manager (използвано вместо ``програмата'')
+% \item СУП - Система за Управление на Пакети (Package Manager)
+
+\newcommand{\figref}[1]{(фиг. \ref{#1})}
+% \newcommand{\lstref}[1]{(списък \ref{#1})}
 
 \usepackage{listings}
-\usepackage{sourcecodepro}
+\usepackage[scale=.85]{sourcecodepro}
 \renewcommand{\lstlistingname}{Списък}
 \lstdefinestyle{shell}{
-    basicstyle=\ttfamily\footnotesize\color{white},
+    basicstyle=\ttfamily\small\color{white},
     backgroundcolor=\color{background-shell},
     rulecolor=\color{background-shell},
     language=sh,
@@ -79,67 +98,71 @@
     % showstringspaces=false,
     % showtabs=false,
 }
+\lstdefinestyle{json}{
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{background-code},
+    rulecolor=\color{background-code},
+    % language=JSON,    % no such language apparently!
+    tabsize=4,
+    captionpos=b,
+    numbers=left,
+    numberstyle=\ttfamily\color{gray},
+    commentstyle=\color{comment}\textit,
+    morestring=[b]",
+    morestring=[d]',
+    stringstyle=\color{type},
+    xleftmargin=20pt,
+    framexleftmargin=26pt,
+    framextopmargin=6pt,
+    framexbottommargin=6pt,
+    frame=ltbr, % framerule=0pt,
+    frameround=tttt,
+    % breakatwhitespace=false,
+    % breaklines=true,
+    % keepspaces=true,
+    % showspaces=false,
+    % showstringspaces=false,
+    % showtabs=false,
+}
 
-\usepackage{biblatex}
+\usepackage[sorting=none]{biblatex}
 \addbibresource{references.bib}
+
+\usepackage{pdfpages}
+
+\usepackage{float}
+\usepackage[skip=5pt]{caption}
 
 
 \begin{document}
 
-\begin{titlepage}
-    \begin{center}
-        \textbf{
-            ТЕХНОЛОГИЧНО УЧИЛИЩЕ ЕЛЕКТРОННИ СИСТЕМИ \\
-            към ТЕХНИЧЕСКИ УНИВЕРСИТЕТ - СОФИЯ
-        }
-    
-        \vspace{5cm}
-        \textbf{\huge ДИПЛОМНА РАБОТА}
-    
-        \vspace{20mm}
-        {\Large Тема:
-            Система за управление на пакети
-        }
-    
-        \vspace{35mm}
-        \begin{tabular}{p{8cm}p{8cm}}
-            \centering
-            \textbf{Дипломант:} \\
-            Ясен Ефремов
-            &
-            \centering
-            \textbf{Научен ръководител:} \\
-            Валентин Върбанов
-        \end{tabular}
-    
-        \vfill
-        СОФИЯ \\
-        \hfill \\
-        2023 г.
-    \end{center}
-\end{titlepage}
+\input{titlepage.tex}
 
-\chapter*{Използвани съкращения}
 
-\begin{itemize}
-    % \item СУП - Система за Управление на Пакети (Package Manager)
-    \item REST
-    \item HTTP
-    \item OOP
-    \item OS
-    \item RAII - Resource Acquisition Is Initialization or RAII
-\end{itemize}
+\includepdf{zadanie.jpg}
 
-\input{chapters/introduction}
-\input{chapters/chapter1}
-\input{chapters/chapter2}
-\input{chapters/chapter3}
-\input{chapters/chapter4}
-\input{chapters/conclusion}
+
+mnenie
+\newpage
+
+
+\printnoidxglossary[type=\acronymtype, title={Използвани съкращения}, sort=def]
+
+
+\input{introduction}
+\addcontentsline{toc}{chapter}{Увод}
+\input{chapter1/chapter1}
+\input{chapter2/chapter2}
+\input{chapter3/chapter3}
+\input{chapter4/chapter4}
+\input{conclusion}
+\addcontentsline{toc}{chapter}{Заключение}
 
 
 \printbibliography
 
+
 \tableofcontents
+
 
 \end{document}
