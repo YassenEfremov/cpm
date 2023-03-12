@@ -45,6 +45,7 @@
 % \item СУП - Система за Управление на Пакети (Package Manager)
 
 \newcommand{\figref}[1]{(фиг. \ref{#1})}
+% \newcommand{\lstref}[1]{(списък \ref{#1})}
 
 \usepackage{listings}
 \usepackage[scale=.85]{sourcecodepro}
@@ -84,6 +85,32 @@
     commentstyle=\color{comment}\textit,
     stringstyle=\color{string},
     directivestyle=\color{directive}\textit,
+    xleftmargin=20pt,
+    framexleftmargin=26pt,
+    framextopmargin=6pt,
+    framexbottommargin=6pt,
+    frame=ltbr, % framerule=0pt,
+    frameround=tttt,
+    % breakatwhitespace=false,
+    % breaklines=true,
+    % keepspaces=true,
+    % showspaces=false,
+    % showstringspaces=false,
+    % showtabs=false,
+}
+\lstdefinestyle{json}{
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{background-code},
+    rulecolor=\color{background-code},
+    % language=JSON,    % no such language apparently!
+    tabsize=4,
+    captionpos=b,
+    numbers=left,
+    numberstyle=\ttfamily\color{gray},
+    commentstyle=\color{comment}\textit,
+    morestring=[b]",
+    morestring=[d]',
+    stringstyle=\color{type},
     xleftmargin=20pt,
     framexleftmargin=26pt,
     framextopmargin=6pt,
