@@ -29,6 +29,7 @@
 
 \usepackage[acronym, toc]{glossaries}
 \makenoidxglossaries
+\newacronym{ansi}{ANSI}{American National Standards Institute}
 \newacronym{api}{API}{Application Programming Interface}
 \newacronym{ci}{CI}{Continuous Integration}
 \newacronym{crud}{CRUD}{Create, Read, Update, Delete}
@@ -37,8 +38,8 @@
 \newacronym{graphql}{GraphQL}{Graph Query Language}
 \newacronym{http}{HTTP}{Hyper Text Transfer Protocol}
 \newacronym{json}{JSON}{JavaScript Object Notation}
-\newacronym{os}{OS}{}
-\newacronym{raii}{RAII}{Resource Acquisition Is Initialization}
+% \newacronym{os}{OS}{}
+% \newacronym{raii}{RAII}{Resource Acquisition Is Initialization}
 \newacronym{rest}{REST}{Representational State Transfer}
 \newacronym{yaml}{YAML}{YAML Ain't Markup Language}
 \newacronym{oop}{ООП}{Обектно-Ориентирано Програмиране}
@@ -46,7 +47,7 @@
 % \item СУП - Система за Управление на Пакети (Package Manager)
 
 \newcommand{\figref}[1]{(фиг. \ref{#1})}
-% \newcommand{\lstref}[1]{(списък \ref{#1})}
+\newcommand{\lstref}[1]{(списък \ref{#1})}
 
 \usepackage{listings}
 \usepackage[scale=.85]{sourcecodepro}
@@ -132,7 +133,7 @@
 \usepackage{pdfpages}
 
 \usepackage{float}
-\usepackage[skip=5pt]{caption}
+\usepackage[font=small, skip=5pt]{caption}
 
 \usepackage{array}
 \usepackage{adjustbox}

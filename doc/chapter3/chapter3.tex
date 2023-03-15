@@ -1,0 +1,1783 @@
+\graphicspath{ {./chapter3/images/} }
+
+\chapter{Реализация на проекта}
+
+
+\section{Структура на проекта}
+
+Всички части на програмата се намират в именното пространство (namespace) cpm.
+В главната директория на проекта се намира и основният файл \texttt{main.cpp},
+от който започва изпълнението на програмата.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{structure}
+    \caption{UML Диаграма на структурата на програмата}
+    \label{fig:structure}
+\end{figure}
+
+
+\section{Файлове с общо предназначение}
+
+Файловете \texttt{paths.cpp} и \texttt{util.cpp} са с общо предназначение.
+
+Файлът \texttt{paths.cpp} предоставя именното пространство \texttt{cpm::paths}, в
+което са дефинирани константни имена, файлови пътища и GitHub URL пътища.
+% \figref{lst:paths}.
+
+% \begin{lstlisting}[style=cpp,
+% 				   caption=Файлът \texttt{paths.cpp},
+% 				   label={lst:paths}]
+% namespace cpm::paths {
+
+% const fs::path packages_dir = "lib";
+
+% const fs::path package_db = "packages.db3";
+
+% const fs::path package_config = "cpm_pack.json";
+
+% const fs::path lockfile = "cpm_lock.json";
+
+% #ifdef _WIN32
+% const fs::path global_dir = std::getenv("APPDATA") / fs::path("cpm");
+% #elif defined(__unix__)
+% const fs::path global_dir = std::getenv("HOME") / fs::path(".local/share/cpm");
+% #endif
+
+% const fs::path package_locations = "package_locations.json";
+
+% const fs::path logs_dir = "logs";
+
+% const fs::path log_base_name = "cpm.log";
+
+% const fs::path api_url = "https://api.github.com/repos";
+
+% const fs::path gh_zip = "zipball";
+
+% const fs::path gh_tags = "tags";
+
+% const fs::path gh_content = "contents";
+
+% } // namespace cpm::paths
+% \end{lstlisting}
+
+Файлът \texttt{util.cpp} предоставя именното пространство \texttt{cpm::util}, в
+което са дефинирани функциите \texttt{base64\_decode()} и
+\texttt{split\_string()}. Първата функция декодира base64 кодиран текст, а
+втората разделя символен низ в зависимост от подадения разделител.
+
+
+\section{Диагносика (Logging)}
+
+Програмата използва библиотеката spdlog за подаване на обратна връзка към
+потребителя и водене на диагностични записки. Във файла \texttt{logger.hpp}
+\lstref{lst:logger} са декларирани обвиващите класове \texttt{CLILogger} и
+\texttt{FileLogger}. Те обаче не са предназначени за директно ползване. Вместо
+това заглавният файл предоставя удобни и кратки директиви, предназначени за
+извеждане на съобщения в конзолата и в диагностичния файл. Директивите поддържат
+няколко нива - грешка, предупреждение и информативно съобщение.
+
+Максималният размер на диагностичния файл е 5MB. Ако бъде превишен се създава
+нов файл, като към името на стария се добавя поредна цифра (например
+\texttt{cpm.1log}). Това се повтаря докато файловете не станат три на брой, след
+което текущият файл се изчиства и записването продължава. Това са така
+наречените въртящи се логове (rotating logs).
+
+\begin{lstlisting}[style=cpp,
+				   caption=Класове и директиви за диагностика и обратна връзка,
+				   label={lst:logger}]
+#define CPM_LOG_INFO(...) cpm::FileLogger::get_file_logger()->info(__VA_ARGS__)
+#define CPM_LOG_ERR(...)  cpm::FileLogger::get_file_logger()->error(__VA_ARGS__)
+
+#define CPM_INFO(...)	cpm::CLILogger::get_stdout_logger()->info(__VA_ARGS__)
+#define CPM_ERR(...)	cpm::CLILogger::get_stderr_logger()->error(__VA_ARGS__)
+#define CPM_WARN(...)	cpm::CLILogger::get_stderr_logger()->warn(__VA_ARGS__)
+
+
+namespace cpm {
+
+/**
+ * @brief The cpm console logger
+ */
+class CLILogger {
+
+	public:
+
+	/**
+	 * @brief Initialize the logger
+	 */
+	static void init();
+
+	static std::shared_ptr<spdlog::logger> get_stdout_logger();
+	static std::shared_ptr<spdlog::logger> get_stderr_logger();
+};
+
+/**
+ * @brief The cpm rotating file logger
+ */
+class FileLogger {
+
+	public:
+
+	/**
+	 * @brief Initialize the logger
+	*/
+	static void init();
+
+	static std::shared_ptr<spdlog::logger> get_file_logger();
+};
+
+} // namespace cpm
+\end{lstlisting}
+
+
+% \section{Обработка на подадените параметри}
+
+
+\section{Пакети}
+
+За описание на пакетите се използва класът \texttt{Package}
+\lstref{lst:package}. Той съдържа всички основни характеристики на пакета - име,
+версия, URL, описание, автор и лиценз. Класът предоставя метода \texttt{init()},
+който инициализира пакета като автоматично намира от къде да го изтегли,
+проверява неговата версия или намира последната такава от GitHub.
+
+При съхранението на списъци от пакети в паметта бе използвана стандартната
+структура \texttt{std::unordered\_set}, имплементираща математическо множество
+от обекти. Структурата рефлектира свойството на пакетите да са уникални като не
+позволява повторението на два еднакви пакета. За да могат да бъдат съхранени в
+нея, пакетите предоставят специална хешираща функция и оператор за сравнение.
+\\ \\ \\
+
+% Всеки пакет съдържа указател към множество от пакети, явяващи се като негови
+% зависимости. Указателят в този случай е нужен, защото стандарта на C++ не
+% позволява съхранението на недовършени типове \cite{incomplete_types} в
+% контейнери различни от \texttt{std::vector}, \texttt{std::list} и
+% \texttt{std::forward\_list}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Клас за пакет, label={lst:package}]
+/**
+ * @brief A class representing a cpm package
+ */
+class Package {
+
+	public:
+
+	struct Hash {
+		std::size_t operator()(const Package &package) const
+		noexcept;
+	};
+
+	/**
+	 * @brief Constructor for package
+	 * 
+	 * @param name the name of the package
+	 * @param version the package version
+	 */
+	Package(const std::string &name, const SemVer &version = SemVer());
+
+	... // getters omitted
+
+	/**
+	 * @brief Initialize the package location and resolve it's
+	 *		  version
+	 */
+	void init();
+
+	friend bool operator==(const Package &lhs, const Package &rhs);
+
+
+	private:
+
+	std::string name;
+	SemVer version;
+	std::string location;
+	std::string url;
+	std::string description;
+	std::string author;
+	std::string license;
+};
+\end{lstlisting}
+
+
+\subsection{Инициализация на пакет}
+
+Някои команди изискват пакетите, с които работят, да бъдат инициализирани преди
+да бъдат използвани. Тази инициализация се изпълнява от функцията
+\texttt{init()} \figref{fig:location-seq} и се състои от следните стъпки:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.85\textwidth]{location-seq}
+    \caption{Диаграма на функцията \texttt{init()}}
+    \label{fig:location-seq}
+\end{figure}
+
+\subsubsection{Намиране на източник за теглене на пакета}
+
+За да не е нужно при теглене на пакет потребителят да трябва да подава и
+източника му (GitHub профил или организация), функцията \texttt{init()}
+автоматично намира от къде да изтегли съответния пакет
+\lstref{lst:init-location}.
+
+Това се постига чрез файла \texttt{package\_locations.json}. Той се намира в
+глобалната конфигурационна директория на програмата и съдържа масив от имена на
+източници. Функцията \texttt{init()} минава през всеки записан във файла
+източник и прави \acrshort{http} HEAD заявка към него с цел да провери дали
+съществува. При първата успешна такава заявка източникът се запазва в полето
+\texttt{location} на пакета и функцията продължава с проверки на версията.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Намиране на източник за теглене на пакета,
+				   label={lst:init-location}]
+CPM_LOG_INFO("Looking for an available GitHub profile ...");
+if (!fs::exists(paths::global_dir / paths::package_locations)) {
+	throw std::runtime_error(fmt::format(
+		"package locations file not found!\n"
+		"Make sure you've installed cpm correctly!"
+	));
+}
+std::ifstream package_locations_file(paths::global_dir /
+									 paths::package_locations);
+auto package_locations_json = json::parse(package_locations_file);
+auto package_locations = package_locations_json["package_locations"]
+						     .get<std::vector<std::string>>();
+this->location = "";
+for (const auto &package_location : package_locations) {
+	CPM_LOG_INFO("Trying {}", package_location);
+	cpr::Response response = cpr::Head(
+		cpr::Url{(paths::api_url / package_location / this->name).string()}
+	);
+	if (response.status_code == cpr::status::HTTP_OK) {
+		CPM_LOG_INFO("Success (status {}) using {}",
+						response.status_code, package_location);
+		this->location = package_location;
+		break;
+
+	} else {
+		CPM_LOG_INFO("Failed (status {}) {}",
+						response.status_code, package_location);
+	}
+}
+if (this->location.empty()) {
+	throw std::invalid_argument(fmt::format(
+		"{}: package not found!", this->name
+	));
+}
+\end{lstlisting}
+
+
+\subsubsection{Сдобиване с последна версия на пакета}
+
+Ако при инсталиране на даден пакет не е подадена неговата версия, функцията
+\texttt{init()} автоматично се сдобива с последната такава
+\lstref{lst:init-latest}. Това става чрез \acrshort{http} GET заявка към
+\texttt{cpm\_pack.json} файла на пакета. От този файл се взима стойността на
+полето, задаващо последната версия. \\
+
+\begin{lstlisting}[style=cpp,
+				   caption=Сдобиване с последната версия на пакета,
+				   label={lst:init-latest}]
+if (!this->version.is_specified()) {
+	CPM_LOG_INFO("Getting latest version for package {} ...", this->name);
+	cpr::Response response = cpr::Get(
+		cpr::Url{(paths::api_url / location / this->name /
+				  paths::gh_content / paths::package_config).string()}
+	);
+	json package_config_json;
+	if (response.status_code == cpr::status::HTTP_OK) {
+		json response_json = json::parse(response.text);
+		std::string package_config_str = util::base64_decode(
+			response_json["content"].get<std::string>()
+		);
+		package_config_json = json::parse(package_config_str);
+		this->version = SemVer(package_config_json["version"]
+							.get<std::string>());
+
+	} else {
+		throw std::runtime_error(fmt::format(
+			"{}: package doesn't contain a {} file!",
+			this->name, paths::package_config.string()
+		));
+	}
+}
+\end{lstlisting}
+
+
+\subsubsection{Валидиране на подадената версия на пакета}
+
+Ако при инсталиране на даден пакет е изрично подадена неговата версия чрез
+синтаксиса \texttt{<име на пакет>@<версия>}, единственото което функцията
+\texttt{init()} прави е да провери, че тази версия наистина съществува за
+дадения пакет \lstref{lst:init-validate}. Това става чрез \acrshort{http} HEAD
+заявка към конкретната версия на пакета.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Валидиране на подадената версия на пакета,
+				   label=lst:init-validate]
+CPM_LOG_INFO("Checking version {} for package {}",
+			 this->version.string(), this->name);
+cpr::Response response = cpr::Head(
+	cpr::Url{(paths::api_url / this->location / this->name /
+				paths::gh_zip / this->version.string()).string()}
+);
+if (response.status_code != cpr::status::HTTP_OK) {
+	throw std::invalid_argument(fmt::format(
+		"{}: version {} not found!", this->name, this->version.string()
+	));
+}
+\end{lstlisting}
+
+
+\section{Версии}
+
+За описание на версиите на пакетите бе използван класът \texttt{SemVer}
+(съкратено от Semantic Version)\lstref{lst:semver}. Този клас имплементира
+частично стандарта за семантични версии \cite{semver}, като включва основните му
+характеристики, а именно трите числени части на версията - главна, второстепенна
+и кръпка. Класът не предоставя поддръжка за идентификатори за предварително
+издание (alpha, beta, rc, и др.) поради факта, че build системата CMake, с която
+се интегрира текущият проект, не следва стандарта за семантични версии стриктно,
+а поддържа единствено първите три числени части на версията\footnote[1]{Има
+отворена дискусия в официалното хранилище на CMake за добавянето на поддръжка за
+идентификатори за предварително издание. Виж \cite{cmake_suffix}}.
+
+За по-удобно използване, класът предоставя имплементация на всички оператори за
+сравнение.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Клас за версия,
+				   label={lst:semver}]
+/**
+ * @brief A class representing a generic semantic version
+ */
+class SemVer {
+
+	public:
+
+	/**
+	 * @brief Default constructor for generic semantic version
+	 */
+	SemVer();
+
+	/**
+	 * @brief Constructor for generic semantic version
+	 * 
+	 * @param major the major version
+	 * @param minor the minor version
+	 * @param patch the patch version
+	 */
+	SemVer(int major, int minor, int patch);
+
+	/**
+	 * @brief Constructor for generic semantic version
+	 * 
+	 * @param version_str a semantic version as a string
+	 */
+	SemVer(const std::string &version_str);
+
+	... // getters omitted
+
+	/**
+	 * @brief Check if the version is different from the default one
+	 * 
+	 * @return true if the version is not the default one, false otherwise
+	 */
+	bool is_specified();
+
+	friend bool operator<(const SemVer &lhs, const SemVer &rhs);
+	friend bool operator>(const SemVer &lhs, const SemVer &rhs);
+	friend bool operator<=(const SemVer &lhs, const SemVer &rhs);
+	friend bool operator>=(const SemVer &lhs, const SemVer &rhs);
+
+	friend bool operator==(const SemVer &lhs, const SemVer &rhs);
+	friend bool operator!=(const SemVer &lhs, const SemVer &rhs);
+
+
+	private:
+
+	int major;
+	int minor;
+	int patch;
+};
+\end{lstlisting}
+
+
+\section{Команди}
+
+За реализиране на командите бе използван така нареченият Команден Шаблон
+(Command Pattern \cite{gof}). При него има базов абстрактен клас, предоставящ
+функция за изпълнение на командата, като всеки следващ клас, наследяващ базовия,
+предоставя своя имплементация на командата за изпълнение.
+
+В основата на всяка команда стои абстрактният клас \texttt{Command}
+\lstref{lst:command}. Той предоставя абстрактния метод \texttt{run}, който всяка
+команда трябва да имплементира. Този метод се извиква в основния файл на
+програмата за съответната подадена команда.
+
+Класът \texttt{Command} наследява класът \texttt{ArgumentParser}, предоставен от
+библиотеката argparse. Този клас има функции, позволяващи задаването на много
+различни опции на командата - описание, параметри, задължителност, стойност по
+подразбиране, незадължителни опции и др.
+
+Някои команди могат да се изпълняват в различен контекст. Такива са например
+командите за инсталиране, премахване и изброяване на пакети. Те могат да работят
+както на локално, така и на глобално ниво. Вътрешната структура \texttt{Context}
+се използва за описание на контекста, в който се изпълнява дедена команда.
+Параметрите на контекста са текущата работна директория, структурата за
+съхранение на списък с инсталираните пакети и текущият lockfile. За да не е
+нужно всяка команда да проверява в какъв контекст се изпълнява и спрямо това да
+сменя съответното хранилище, контекста съдържа умни указатели (smart pointers)
+към базовите класове на хранилищата. Това позволява използването на всички
+техни методи, без значение кое конкретно хранилище се използва.
+
+Структурата съдържа указател към абстрактния клас \texttt{Repository}, което
+позволява извикването на всички негови виртуални методи, без значение от това
+коя тяхна имплементация точно се използва.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Абстрактен клас за команда,
+				   label={lst:command}]
+/**
+ * @brief A class representing a cpm command. All other cpm commands should
+ * 		  derive from this class
+ */
+class Command : public argparse::ArgumentParser {
+
+	public:
+
+	/**
+	 * @brief Constructor for command
+	 * 
+	 * @param name the name of the command
+	 */
+	Command(const std::string &name);
+	virtual ~Command() = default;
+
+	/**
+	 * @brief Execute the command
+	 */
+	virtual void run() = 0;
+
+	friend class Parser;
+
+
+	protected:
+
+	/**
+	 * @brief A struct representing the context a cpm command runs in
+	 */
+	struct Context {
+		fs::path cwd;
+		std::shared_ptr<Repository<Package, Package::Hash>> repo;
+		std::shared_ptr<Lockfile> lockfile;
+	};
+
+	Command();
+	Context context;
+};
+\end{lstlisting}
+
+
+\subsection{Регистриране на команди}
+
+Командите се регистрират, използвайки функциите, предоставени от библиотеката
+argparse \lstref{lst:register-command}. Всички команди се съхраняват в структура
+\texttt{std::map}, използваща за ключ името на командата, а за стойност указател
+към основния абстрактен клас \texttt{Command}. Това позволява извикването на
+виртуалния метод \texttt{run}, без значение от това коя негова имплементация
+точно се използва. Всяка команда също се регистрира в главната команда
+\texttt{cpm}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Създаване и регистриране на команда,
+				   label={lst:register-command}]
+argparse::ArgumentParser parser("cpm", CPM_VERSION);
+
+
+static InstallCommand install_command("install");
+install_command.add_description("Install the specified package/s");
+install_command.add_argument("packages")
+	.help("Packages to install")
+	.required()
+	.nargs(argparse::nargs_pattern::at_least_one);
+install_command.add_argument("-g", "--global")
+	.help("install package/s globally")
+	.default_value(false)
+	.implicit_value(true);
+
+... // code omitted
+
+parser.add_subparser(install_command);
+... // code omitted
+commands.insert({"install", &install_command});
+... // code omitted
+\end{lstlisting}
+
+
+\subsection{Обработка на подадените параметри}
+
+След като всички команди са регистрирани се преминава към обработката на
+подадените параметри към програмата \lstref{lst:parse}. Променливите
+\texttt{argc} и \texttt{argv} съдържат съответно броя на подадените аргументи и
+техните стойности под формата на символни низове.
+
+Първо се проверява дали към програмата са подадени достатъчно параметри.
+Минимумът в този случай е два параметъра - името на програмата (подаден по
+подразбиране) и името на командата, която трябва да се изпълни. Ако броят на
+параметрите е по-малък от два се хвърля грешка, която се обработва от
+\texttt{main()} функцията и води до извеждането на съобщение, инструктиращо
+потребителя как да използва програмата.
+
+Следващата стъпка е същинската обработка на параметрите. Това става лесно с
+помощта на функцията \texttt{parse\_args()}, предоставена от библиотеката
+\texttt{argparse}. На тази функция също се подават променливите \texttt{argc}
+и \texttt{argv}. Ако има проблем в синтаксиса при извикване на програмата отново
+се хвърля грешка, която се обработва от \texttt{main()} функцията и води до
+извеждането на съобщение, информиращо потребителя какъв е проблема.
+
+Последната стъпка е определянето на контекста, в който се изпълнява програмата.
+По подразбиране програмата се изпълнява на локално ниво. Това може да се промени
+с подаването на флага \texttt{-{}-global} (или по-краткото \texttt{-g}). В
+зависимост от това се променят стойностите на вътрешната структура
+\texttt{context}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Обработка на подадените параметри,
+				   label={lst:parse}]
+if (argc < 2) {
+	throw std::runtime_error(parser.help().str());
+}
+parser.parse_args(argc, argv);
+
+
+try {
+	if (commands[argv[1]]->is_used("--global")) {
+		commands[argv[1]]->context = Command::Context{
+			paths::global_dir,
+			std::make_shared<PackageDB>(
+				paths::global_dir / paths::package_db
+			),
+			std::make_shared<Lockfile>(
+				paths::global_dir / paths::lockfile
+			)
+		};
+
+	} else {
+		throw std::runtime_error("");
+	}
+
+} catch(const std::exception &e) {
+	commands[argv[1]]->context = Command::Context{
+		fs::current_path(),
+		std::make_shared<PackageConfig>(
+			fs::current_path() / paths::package_config
+		),
+		std::make_shared<Lockfile>(
+			fs::current_path() / paths::lockfile
+		)
+	};
+}
+\end{lstlisting}
+
+
+\subsection{Команда за инсталиране}
+
+Класът \texttt{InstallCommand} отговаря за инсталирането на пакети. Начинът му
+на работа е илюстриран на по-долната диаграма \figref{fig:install-seq}. Той се
+състои от следните стъпки:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\textwidth]{install-seq}
+    \caption{Диаграма на процеса на инсталиране на пакет}
+	\label{fig:install-seq}
+\end{figure}
+
+
+\subsubsection{Сдобиване с пакетите за инсталиране}
+
+Поради факта, че всяка команда наследява от класа \texttt{ArgumentParser},
+параметрите, подадени на програмата, могат да бъдат достъпени директно от класа
+\texttt{InstallCommand}. Те обаче са под формата на списък от символни низове,
+представляващи имената и версиите на пакетите. Този списък трябва да бъде
+превърнат в множество от пакети. Процесът за това е описан по-долу
+\lstref{lst:install-get}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Сдобиване с пакетите за инсталиране,
+				   label={lst:install-get}]
+CPM_LOG_INFO("===== Starting install command =====");
+
+auto packages_str = this->get<std::vector<std::string>>("packages");
+CPM_LOG_INFO("args: {}", [&]() {
+	std::string args = "[";
+	for (const auto &arg : packages_str) {
+		args += arg + ", ";
+	}
+	return args + "]";
+}());
+std::unordered_set<Package, Package::Hash> packages;
+for (const auto &package_str : packages_str) {
+	auto tokens = util::split_string(package_str, "@");
+	if (tokens.size() == 2) {
+		CPM_LOG_INFO("Checking package {}@{} ...", tokens[0], tokens[1]);
+		CPM_INFO("Checking package {}@{} ...", tokens[0], tokens[1]);
+		Package new_package(tokens[0], SemVer(tokens[1]));
+		try {
+			new_package.init();
+		} catch(const std::exception &e) {
+			CPM_INFO(" failed!\n");
+			throw std::invalid_argument(e.what());
+		}
+		CPM_LOG_INFO(
+			"version {} for package {} is valid",
+			new_package.get_version().string(), new_package.get_name()
+		);
+		CPM_INFO(" found.\n");
+		packages.insert(new_package);
+
+	} else if (tokens.size() == 1) {
+		CPM_LOG_INFO("Resolving version for package {} ...", tokens[0]);
+		CPM_INFO("Resolving version for package {} ...", tokens[0]);
+		Package new_package(tokens[0]);
+		try {
+			new_package.init();
+		} catch(const std::exception &e) {
+			CPM_INFO(" failed!\n");
+			throw std::invalid_argument(e.what());
+		}
+		CPM_LOG_INFO(
+			"found version {} (latest) for package {}",
+			new_package.get_version().string(), new_package.get_name()
+		);
+		CPM_INFO(" found latest: " YELLOW_FG("{}") "\n",
+				 new_package.get_version().string());
+		packages.insert(new_package);
+
+	} else {
+		throw std::invalid_argument(fmt::format(
+			"{}: invalid package format!", package_str
+		));
+	}
+}
+\end{lstlisting}
+
+Всеки низ от списъка може да съдържа или само името на пакета, или да бъде от
+вида \texttt{<име на пакет>@<версия>}. Тези два случая изискват различен начин
+на обработка. Това е отразено на по-горния фрагмент от код, където се забелязват
+два по-големи \texttt{if} блока. Първият от тях създава пакет, за който са
+подадени както името, така и версията, след което пакетът се инициализира. Ако
+версията не е подадена на пакета се задава такава по подразбиране. Пакетът
+отново се инициализира.
+
+По време на описания по-горе процес се водят съответните диагностични записки,
+които отразяват разликата в начина на създаване на пакета. Ако при въвеждане на
+пакета е използван различен формат от по-рано споменатите се хвърля грешка,
+която се обработва в \texttt{main} функцията и уведомява потребителя.
+
+
+\subsubsection{Проверка}
+
+Първото нещо, което командата за инсталиране прави, е да провери дали пакетът
+не е вече инсталиран \lstref{lst:install-check}. Това става чрез функцията
+\texttt{check\_if\_installed()}. Ако пакет със същото име е намерен се изпраща
+съобщение към потребителя, предупреждаващо, че даденият пакет вече е инсталиран.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за проверка на пакет,
+				   label={lst:install-check}]
+CPM_LOG_INFO("Checking if package {} is already installed ...",
+			 package.get_name());
+if (this->check_if_installed(package)) {
+	throw std::invalid_argument(fmt::format(
+		"{}: package already installed!", package.get_name()
+	));
+}
+
+... // code omitted
+
+bool InstallCommand::check_if_installed(const Package &package) {
+    bool specified = this->context.repo->contains(package);
+    bool downloaded = fs::exists(this->context.cwd / paths::packages_dir /
+								 package.get_name() / "");
+
+    return specified && downloaded;
+}
+\end{lstlisting}
+
+
+\subsubsection{Теглене}
+
+Функцията \texttt{download\_package()} тегли подадения пакет под формата на
+компресиран zip архив \lstref{lst:install-download}. Това става чрез
+\acrshort{http} GET заявка към предоставената от GitHub точка за достъп.
+Параметърът \texttt{download\_progress} е друга функция (callback), която се
+извиква всеки път, когато има напредък с тегленето на пакета.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за теглене на пакет,
+				   label={lst:install-download}]
+cpr::Response InstallCommand::download_package(
+    const Package &package, const std::string location,
+    std::function<bool(
+        cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow,
+        cpr::cpr_off_t uploadTotal, cpr::cpr_off_t uploadNow,
+        std::intptr_t userdata
+    )> download_progress
+) {
+    CPM_LOG_INFO(
+        "GET {}/{}/{}/{}/{}",
+        paths::api_url.string(), location, paths::gh_zip,
+        package.get_name(), package.get_version().string()
+    );
+    cpr::Response response = cpr::Get(
+        cpr::Url{(paths::api_url / location / package.get_name() /
+                  paths::gh_zip / package.get_version().string()).string()},
+        cpr::ProgressCallback(download_progress)
+    );
+    CPM_LOG_INFO("Response status: {}", response.status_code);
+    if (response.status_code != cpr::status::HTTP_OK) {
+        throw std::runtime_error(fmt::format(
+            "{}: version {} not found!",
+            package.get_name(), package.get_version().string()
+        ));
+    }
+
+    return response;
+}
+\end{lstlisting}
+
+
+\subsubsection{Декомпресиране}
+
+Декомпресирането на пакета се извършва директно в паметта от функцията
+\texttt{extract\_package()} \lstref{lst:install-extract}. Тя обхожда всички
+файлове в zip архива като декомпресира и сменя името на всеки от тях. Това е
+нужно поради ограничение на GitHub \acrshort{api} \cite{contents_zip}, който
+сформира името на изтегленото хранилище като добавя наставка, отразяваща
+текущото разклонение. Не е желателно крайната папка да бъде запазена с такова
+име, защото то усложнява работата на програмата.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за декомпресиране на пакет,
+				   label={lst:install-extract}]
+void InstallCommand::extract_package(
+    const std::string &stream, const fs::path &output_dir,
+    std::function<bool(int currentEntry, int totalEntries)> on_extract
+) {
+    struct zip_t *zip = zip_stream_open(stream.c_str(), stream.size(), 0, 'r');
+
+    std::size_t total_entries = zip_entries_total(zip);
+    CPM_LOG_INFO("Total entries to extract: {}", total_entries);
+    for (int i = 0; i < total_entries; i++) {
+        zip_entry_openbyindex(zip, i);
+
+        std::string entry_name = zip_entry_name(zip);
+        CPM_LOG_INFO("extracting {} ...", entry_name);
+        std::size_t first_slash = entry_name.find_first_of('/');
+        if (zip_entry_isdir(zip)) {
+            fs::create_directories(
+				output_dir / entry_name.substr(first_slash + 1)
+			);
+        }
+        zip_entry_fread(zip,
+			(output_dir / entry_name.substr(first_slash + 1)).string().c_str()
+		);
+        on_extract(i + 1, total_entries);
+
+        zip_entry_close(zip);
+    }
+
+    zip_stream_close(zip);
+}
+\end{lstlisting}
+
+
+\subsubsection{Създаване на символичните връзки}
+
+Процесът на свързване на пакетите и техните зависимости е илюстриран на
+по-долния фрагмент от код \lstref{lst:symlinks}. \\ \\
+
+\begin{lstlisting}[style=cpp,
+				   caption=Създаване на символичните връзки,
+				   label={lst:symlinks}]
+if (packages_to_install.size() < 2) return;
+for (const auto &[name, content] : package_lockfile_json["dependencies"]
+								       .items()) {
+	this->context.lockfile->add_dep(
+		package, Package(name, content["version"].get<std::string>())
+	);
+	CPM_LOG_INFO("symlinking direct dependency: {} ...", name);
+	fs::create_directory(output_dir / package.get_name() / paths::packages_dir);
+	fs::create_directory_symlink(
+		output_dir / name,
+		output_dir / package.get_name() / paths::packages_dir / name
+	);
+	CPM_LOG_INFO("symlink created");
+
+	this->context.lockfile->add(
+		Package(name, content["version"].get<std::string>())
+	);
+	if (content.contains("dependencies")) {
+		for (const auto &[dep_name, dep_version] : content["dependencies"]
+												       .items()) {
+			this->context.lockfile->add_dep(
+				Package(name, content["version"].get<std::string>()),
+				Package(dep_name, dep_version.get<std::string>())
+			);
+			CPM_LOG_INFO("symlinking transitive dependency: {} ...", dep_name);
+			fs::create_directory(output_dir / name / paths::packages_dir);
+			fs::create_directory_symlink(
+				output_dir / dep_name,
+				output_dir / name / paths::packages_dir / dep_name
+			);
+			CPM_LOG_INFO("symlink created");
+		}
+	}
+}
+\end{lstlisting}
+
+Преди да започне свързването на пакетите се проверява дали текущият пакет има
+зависимости. Ако няма такива тази стъпка изцяло се пропуска.
+
+Самото свързване се извършва с помощта на два вложени \texttt{for} цикъла.
+Първият от тях обхожда директните зависимости на пакета, който се инсталира в
+момента, добавя ги към lockfile на текущия пакет и създава символични връзки в
+поддиректорията \texttt{lib}, сочещи към директориите на зависимостите. Вторият
+\texttt{for} цикъл обхожда преходните зависимости на пакета, който се инсталира
+в момента, отново ги добавя към lockfile на текущия пакет и създава символични
+връзки в поддиректорията \texttt{lib} на текущата обхождана зависимост, сочещи
+към директориите на нейните зависимости.
+
+
+\subsubsection{Паралелност}
+
+За да не е нужно да се чака инсталацията на даден пакет да приключи, за да
+започне инсталацията на следващия, програмата тегли и декомпресира всеки пакет в
+отделна нишка. В този случай синхронизация между отделните нишки е нужна
+единствено при опресняване на индикаторите за напредък, разгледани в следващата
+секция.
+
+
+\subsubsection{Индикатори за напредък}
+
+По време на изпълнението на програмата се показват анимирани индикатори,
+отразяващи напредъка по процеса на инсталация на пакетите. Тези индикатори са
+съставени от заглавие, описващо операцията, която се извършва, и лента,
+опресняваща се всеки път, когато има напредък. Всеки индикатор има един или
+повече етапи. Например при инсталирането на даден пакет се минава през два
+етапа - теглене и декомпресиране. Също така само един етап на дадения индикатор
+може да бъде показан в даден момент. Това е така нареченият активен етап.
+
+Индикаторите за напредък и техните етапи са имплементирани чрез класовете
+\texttt{ProgressBar} и \texttt{Stage} \figref{lst:progress-bar}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Класове за индикатор за напредък и етап,
+				   label={lst:progress-bar}]
+/**
+ * @brief A class representing a cpm progress bar
+ */
+class ProgressBar {
+
+	public:
+
+	/**
+	 * @brief Constructor for progress bar. This creates the first stage of the
+	 *		  new progress bar and sets it as the active stage.
+	 * 
+	 * @param title the title of the first stage
+	 * @param width the width of the first stage progress bar
+	 * @param symbol the symbol with which to fill the progress bar
+	 * @param max_value the maximum value of the first stage progress bar. By
+	 * 		  default it is 0, which means that the maximum value is unknown. In
+	 * 		  that case the progress bar circles through infinitely to simulate
+	 * 		  progress.
+	 */
+	ProgressBar(const std::string &title, int width, char symbol,
+				int max_value = 0);
+
+	/**
+	 * @brief Add a new stage to the current progress bar
+	 * 
+	 * @param title the title of the new stage
+	 * @param width the width of the first stage progress bar
+	 * @param symbol the symbol with which to fill the progress bar
+	 * @param max_value the maximum value of the new stage progress bar. By
+	 * 		  default it is 0, which means that the maximum value is unknown. In
+	 * 		  that case the progress bar circles through infinitely to simulate
+	 * 		  progress.
+	 */
+	void add_stage(const std::string &title, int width, char symbol,
+				   int max_value = 0);
+
+	/**
+	 * @brief Print the active progress bar stage
+	 */
+	void print_active_stage() const;
+
+	/**
+	 * @brief Update/Add custom message after the active progress bar
+	 * 
+	 * @param new_suffix the new message
+	 */
+	void update_suffix(const std::string &new_suffix);
+
+	/**
+	 * @brief Set the entire active progress bar to a new one
+	 * 
+	 * @param new_suffix the new progress bar
+	 */
+	void set_active_bar(const std::string &new_bar);
+
+	// prefix increment
+	ProgressBar& operator++();
+
+	// postfix increment
+	ProgressBar operator++(int);
+
+	// prefix decrement
+	ProgressBar& operator--();
+
+	// postfix decrement
+	ProgressBar operator--(int);
+
+
+	private:
+
+	/**
+	 * @brief A class representing one of the progress bar's stages
+	 */
+	class Stage {
+
+		public:
+
+		/**
+		 * @brief Constructor for progress bar stage
+		 * 
+		 * @param title the title of the new stage
+		 * @param width the width of the first stage progress bar
+		 * @param symbol the symbol with which to fill the progress bar
+		 * @param max_value the maximum value of the new stage progress bar. By
+		 * 		  default it is 0, which means that the maximum value is
+		 * 		  unknown. In that case the progress bar circles through
+		 * 		  infinitely to simulate progress.
+		 */
+		Stage(const std::string &title, int width, char symbol,
+			  int max_value = 0);
+
+		std::string title;
+		std::string bar;
+		std::string suffix;	
+		int width;
+		char symbol;
+		int max_value;
+		int value;
+	};
+
+	std::vector<Stage> stages;
+	Stage active_stage;
+
+	/**
+	 * @brief Fill the current active progress bar up to the value specified by
+	 * 		  this->active_stage.value (or circle through to simulate progress).
+	 */
+	void fill_bar();
+};
+\end{lstlisting}
+
+Вследствие на това, че пакетите се инсталират паралелно, индикаторите за
+напредък също се опресняват паралелно. За това се грижи функцията
+\texttt{refresh\_all\_progress()} \lstref{lst:refresh-progress}. Тя първо връща
+курсора на конзолата толкова реда нагоре, колкото индикатори за прогрес са
+активни в момента умножено по две (един индикатор заема два реда). Това става
+чрез специалния \acrshort{ansi} код \texttt{\textbackslash x1b[nF}, където
+\texttt{n} е броят редове за връщане. След това всички индикатори се извеждат на
+ново.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за опресняване на всички индикатори,
+				   label={lst:refresh-progress}]
+const auto refresh_all_progress = [&]() {
+	std::lock_guard<std::mutex> lock(printing_mutex);
+	std::cout << fmt::format("\x1b[{}F", all_progress.size() * 2);
+	for (const auto &[package, progress_bar] : all_progress) {
+		progress_bar.print_active_stage();
+	}
+};
+\end{lstlisting}
+
+Индикаторите предоставят оператори за увеличаване и намаляване на напредъка,
+както и функции за свободна промяна на лентата и добавяне на допълнителен надпис
+(suffix).
+
+
+\subsubsection{Отчет}
+
+Последната стъпка при инсталирането на пакета е неговото записване в локалното
+хранилище \lstref{lst:install-register}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за отчитане на пакет,
+				   label={lst:install-register}]
+int InstallCommand::register_package(const Package &package) {
+	return this->context.repo->add(package);
+}
+\end{lstlisting}
+
+
+\subsection{Команда за премахване}
+
+Класът \texttt{RemoveCommand} отговаря за премахването на пакети. Начинът му
+на работа се състои от следните стъпки:
+
+
+\subsubsection{Проверка}
+
+Първото нещо, което командата за премахване прави, е да провери дали пакетът е
+инсталиран \lstref{lst:remove-check}. Ако не е се изпраща съобщение към
+потребителя, предупреждаващо, че даденият пакет вече е инсталиран.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за проверка на пакет,
+				   label={lst:remove-check}]
+bool RemoveCommand::check_if_not_installed(const Package &package) {
+    bool specified = this->context.repo->contains(package);
+    bool downloaded = fs::exists(this->context.cwd / paths::packages_dir /
+								 package.get_name() / "");
+
+    return !specified || !downloaded;
+}
+\end{lstlisting}
+
+
+\subsubsection{Изтриване}
+
+Пакетите се премахват чрез функцията \texttt{delete\_all()}
+\lstref{lst:remove-delete}. Тя първо проверява дали пакета, който трябва да бъде
+премахнат, има зависимости. Ако има те се обхождат и преди да бъдат премахнати
+се проверява дали има други инсталирани пакети, които зависят от тях. При
+наличието на такива пакети зависимостта не се премахва.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за изтриване на пакет,
+				   label={lst:remove-delete}]
+std::uintmax_t RemoveCommand::delete_all(const Package &package) {
+    std::uintmax_t total_entries = 0;
+    this->context.lockfile->remove(package);
+    if (fs::exists(this->context.cwd / paths::packages_dir /
+				   package.get_name() / paths::packages_dir / "")) {
+        for (const auto &dep_path : fs::directory_iterator(
+				this->context.cwd / paths::packages_dir /
+                package.get_name() / paths::packages_dir / "")) {
+            Package dep(dep_path.path().filename().string());
+            CPM_LOG_INFO(
+				"Checking transitive dependency {} ...", dep.get_name()
+			);
+            if (this->context.repo->contains(dep) ||
+				this->context.lockfile->contains_dep(dep)) {
+                CPM_LOG_INFO(
+                    "Transitive dependency {} is required by another package! "
+					"Skipping ...",
+                    dep.get_name()
+                );
+                continue;
+            }
+            total_entries += this->delete_all(dep);
+            CPM_LOG_INFO("Removed transitive dependency {}", dep.get_name());
+        }
+    }
+    if (this->context.lockfile->contains_dep(package)) {
+        CPM_LOG_INFO(
+            "Package {} is required by another package! Skipping ...",
+            package.get_name()
+        );
+
+    } else {
+        total_entries += fs::remove_all(
+			this->context.cwd / paths::packages_dir / package.get_name() / ""
+		);
+    }
+    return total_entries;
+}
+\end{lstlisting}
+
+
+\subsubsection{Отчет}
+
+Последната стъпка при премахването на пакета е неговото изтриване от локалното
+хранилище \lstref{lst:remove-register}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Функция за отчитане на пакет,
+				   label={lst:remove-register}]
+int RemoveCommand::unregister_package(const Package &package) {
+	return this->context.repo->remove(package);
+}
+\end{lstlisting}
+
+
+\subsection{Команда за изброяване}
+
+Класът \texttt{ListCommand} отговаря за изброяването на пакети. Начинът му
+на работа се състои от следните стъпки:
+
+\subsubsection{Проверки и сдобиване с инсталираните пакети}
+
+Инсталираните пакети се взимат от текущото хранилище чрез метода
+\texttt{list()}. Ако файлът на хранилището не съществува или не съдържа никакви
+пакети се извежда съобщение, че няма инсталирани пакети.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Команда за изброяване,
+				   label={lst:list-get}]
+CPM_LOG_INFO("===== Starting list command =====");
+
+CPM_LOG_INFO("Checking if a {} file exists ...",
+			 paths::package_config.string());
+if (!fs::exists(this->context.cwd / this->context.repo->get_filename())) {
+	CPM_LOG_INFO("Repository doesn't exist in the current context!");
+	CPM_INFO("No packages installed!\n");
+	return;
+}
+
+auto installed_packages = this->context.repo->list();
+
+CPM_LOG_INFO("Checking if there are any packages installed ...");
+if (installed_packages.empty() &&
+	(!fs::exists(this->context.cwd / paths::packages_dir / "") ||
+	 fs::is_empty(this->context.cwd / paths::packages_dir / ""))) {
+	CPM_LOG_INFO("Set of installed packages is empty!");
+	CPM_INFO("No packages installed!\n");
+	return;
+}
+\end{lstlisting}
+
+
+\subsubsection{Изброяване на инсталираните пакети}
+
+Пакетите, които са инсталирани, могат да се изброят по два начина - съкратено
+(по подразбиране) и разширено. Разширеното изброяване може да се включи с флага
+\texttt{-{}-all} (или по-краткото \texttt{-a}). При него се изброяват всички
+зависимости да инсталираните пакети.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Команда за изброяване,
+				   label={lst:list-installed}]
+CPM_LOG_INFO("Listing packages specified in {} ...",
+				(this->context.cwd / paths::package_config).string());
+CPM_INFO("Packages in {}:\n",
+			(this->context.cwd / paths::packages_dir / "").string());
+int installed = 0;
+int not_installed = 0;
+for (const auto &package : installed_packages) {
+	if (!fs::exists(this->context.cwd / paths::packages_dir /
+		package.get_name())) {
+		not_installed++;
+		CPM_INFO("  {} (not installed)\n", package.string());
+
+	} else {
+		installed++;
+		if (this->is_used("--all")) {
+			this->print_deps(package, this->context.cwd / paths::packages_dir /
+							 package.get_name() / "");
+		} else {
+			CPM_INFO("  {}\n", package.string());
+		}
+	}
+}
+\end{lstlisting}
+
+
+\subsubsection{Изброяване на излишните пакети}
+
+Ако в папката с инсталирани пакети има такива, които не присъстват във
+конфигурационния файл на текущия пакет, те се изброяват като след името им се
+добавя текста ``(unspecified)''.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Команда за изброяване,
+				   label={lst:list-unspecified}]
+CPM_LOG_INFO("Listing packages NOT specified in {} ...",
+				(this->context.cwd / paths::package_config).string());
+int unspecified = 0;
+if (fs::exists(this->context.cwd / paths::packages_dir / "")) {
+	for (const auto &dir_entry :
+			fs::directory_iterator(this->context.cwd /
+								   paths::packages_dir / "")) {
+		Package package(dir_entry.path().filename().string());
+		if (!this->context.repo->contains(package) &&
+			!this->context.lockfile->contains_dep(package)) {
+			unspecified++;
+			CPM_INFO("  {} (unspecified)\n", package.get_name());
+		}
+	}
+}
+
+CPM_INFO("\nTotal: {} installed, {} not installed, {} unspecified\n",
+			installed, not_installed, unspecified);
+
+CPM_LOG_INFO("===== Finished list command. =====");
+\end{lstlisting}
+
+
+\subsection{Команда за създаване}
+
+Класът \texttt{CreateCommand} отговаря за създаването на нови пакети
+\lstref{lst:create}. Той създава нов \texttt{cpm\_pack.json} файл със стойности
+по подразбиране \lstref{lst:config-default}.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Команда за създаване,
+				   label={lst:create}]
+CPM_LOG_INFO("===== Starting create command =====");
+
+CPM_LOG_INFO("Creating {} file ...", paths::package_config.string());
+PackageConfig package_config(this->context.cwd / paths::package_config);
+Package new_package = package_config.create_default();
+
+CPM_INFO("Created package \"{}\"\n", new_package.get_name());
+
+CPM_LOG_INFO("===== Finished create. =====");
+\end{lstlisting}
+
+\begin{lstlisting}[style=cpp,
+				   caption=cpm\_pack.json по подразбиране,
+				   label={lst:config-default}]
+{
+	"name": "example-package",
+	"version": "0.1.0",
+	"url": "",
+	"description": "",
+	"author": "",
+	"license": ""
+}
+\end{lstlisting}
+
+Тези стойности са зададени в \texttt{create\_default()}
+\lstref{lst:create-default} функцията на \texttt{PackageConfig} класа.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Стойности по подразбиране на нов пакет,
+				   label={lst:create-default}]
+Package PackageConfig::create_default() {
+	std::string default_package_name = fs::current_path().stem().string();
+	SemVer default_package_version("0.1.0");
+	this->config_json["name"] = default_package_name;
+	this->config_json["version"] = default_package_version.string();
+	this->config_json["url"] = "";
+	this->config_json["description"] = "";
+	this->config_json["author"] = "";
+	this->config_json["license"] = "";
+	this->save();
+	return Package(default_package_name, default_package_version);
+}
+\end{lstlisting}
+
+
+\subsection{Команда за синхронизиране}
+
+Класът \texttt{SyncCommand} модифицира дървовидната файлова структура от
+зависимости така че тя да съвпада с тази, описана във файла
+\texttt{cpm\_pack.json}. Този клас наследява командите за инсталиране и
+премахване на пакети, поради нуждата да може както да инсталира липсващи пакети,
+така и да премахва ненужни такива. Това води до така нареченият проблем на
+диамантеното Наследяване (също наричан Deadly Diamond of Death \cite{diamond}).
+В C++ той е решен чрез възможността за виртуално наследяване.
+
+\subsubsection{Инсталиране на липсващите пакети}
+
+Преди да бъдат инсталирани пакетите се инициализират по същия начин, както при
+командата за инсталирани.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Инсталиране на липсващите пакети,
+				   label={lst:sync-install}]
+CPM_LOG_INFO("===== Starting sync command =====");
+
+CPM_LOG_INFO("Obtaining new packages from {} ...",
+			 paths::package_config.string());
+auto packages = this->context.repo->list();
+CPM_LOG_INFO("New packages in {}: {}", paths::package_config.string(),
+	[&]() {
+		std::string packages_str = "[";
+		for (const auto &p : packages) {
+			packages_str += p.get_name() + ", ";
+		}
+		return packages_str + "]";
+	}()
+);
+
+CPM_INFO("Synchronizing packages with {} ...\n",
+		 paths::package_config.string());
+
+CPM_LOG_INFO("Initializing new packages ...",paths::package_config.string());
+std::unordered_set<Package, Package::Hash> packages_to_install;
+for (auto package : packages) {
+	CPM_LOG_INFO("Checking package {} ...", package.string());
+	CPM_INFO("Checking package {} ...", package.string());
+	try {
+		package.init();
+	} catch(const std::exception &e) {
+		CPM_INFO(" failed!\n");
+		throw std::invalid_argument(e.what());
+	}
+	CPM_LOG_INFO(
+		"version {} for package {} is valid",
+		package.get_version().string(), package.get_name()
+	);
+	CPM_INFO(" found.\n");
+	packages_to_install.insert(package);
+}
+
+CPM_LOG_INFO("Installing new packages ...",paths::package_config.string());
+int new_packages = 0;
+for (const auto &package : packages_to_install) {
+	try {
+		new_packages += this->install_package(
+			package, this->context.cwd / paths::packages_dir / ""
+		);
+	
+	} catch(const std::exception &e) {
+		CPM_LOG_ERR(e.what());
+		CPM_ERR(e.what());
+	}
+}
+\end{lstlisting}
+
+
+\subsubsection{Премахване на излишните пакети}
+
+Ако в папката с инсталирани пакети има такива, които се на споменати в
+конфигурационния файл на текущия пакет, те се премахват.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Премахване на излишните пакети,
+				   label={sync-remove}]
+CPM_LOG_INFO("Removing unspecified packages ...",
+			 paths::package_config.string());
+int unspecified_packages = 0;
+for (const auto &dir_entry :
+		fs::directory_iterator(this->context.cwd /
+							   paths::packages_dir / "")) {
+
+	Package package(dir_entry.path().filename().string());
+
+	if (!this->context.repo->contains(package) &&
+		!this->context.lockfile->contains_dep(package)) {
+		CPM_LOG_INFO("Found unspecified package {}, removing",
+					 package.get_name());
+		unspecified_packages += this->remove_package(package);
+	}
+}
+\end{lstlisting}
+
+
+\section{Съхранение на пакетите}
+
+За съхранение на списък с инсталираните пакети е използван абстрактният клас
+\texttt{Repository} \lstref{lst:repository}. Този клас е шаблонен, което
+позволява съхранението на произволни типове данни. Той има референция към файл,
+използван за съхранение списъка с инсталираните пакети. Класът също предоставя
+методи за почти всички \acrshort{crud} операции, без тази за обновяване.
+
+\begin{lstlisting}[style=cpp,
+				   caption=Абстрактен клас за хранилище,
+				   label={lst:repository}]
+/**
+ * @brief A class representing an object repository
+ * 
+ * @tparam T the type of objects to store
+ */
+template<typename T, typename P>
+class Repository {
+
+	public:
+
+	/**
+	 * @brief Constructor for repository
+	 * 
+	 * @param filename the name of the file to store the repository
+	 */
+	Repository(const fs::path &filename) : filename(filename) {}
+	virtual ~Repository() = default;
+
+	/**
+	 * @brief Getter for filename
+	 * 
+	 * @return The name of the repository file
+	 */
+	const fs::path &get_filename() const { return this->filename; }
+
+	/**
+	 * @brief Add the specified objects/s to the repository
+	 * 
+	 * @param object the object to add
+	 * 
+	 * @return The number of records modified in the repository
+	 */
+	virtual int add(const T &object) = 0;
+
+	/**
+	 * @brief Remove the specified object/s from the repository
+	 * 
+	 * @param object the object to remove
+	 * 
+	 * @return The number of records modified in the repository
+	 */
+	virtual int remove(const T &object) = 0;
+
+	/**
+	 * @brief List all of the objects in the repository
+	 * 
+	 * @return A list of all the objects in the repository
+	 */
+	virtual std::unordered_set<T, P> list() const = 0;
+
+	/**
+	 * @brief Check if the specified object is in the repository
+	 * 
+	 * @param object the object
+	 * 
+	 * @return true if the object is found, false otherwise
+	 */
+	virtual bool contains(const T &object) const = 0;
+
+
+	protected:
+
+	fs::path filename;
+};
+\end{lstlisting}
+
+Този абстрактен клас има две имплементации в програмата - тази съхраняваща
+локално инсталирани пакети и тази, съхраняваща глобално инсталирани пакети.
+
+
+\subsection{Локално инсталирани пакети}
+
+Списъкът с локално инсталирани пакети се съхранява във файла
+\texttt{cpm\_pack.json}, намиращ се в директорията на текущия пакет. Файлът
+съдържа масива \texttt{dependencies}, в който са описани имената на
+инсталираните пакети и техните конкретни версии. Самите пакети се инсталират в
+поддиректорията \texttt{lib} (съкратено от libraries).
+
+\begin{lstlisting}[style=cpp,
+				   caption=Хранилище за локално инсталирани пакети,
+				   label={lst:package-config}]
+PackageConfig::PackageConfig(const fs::path &filename) : Repository(filename) {
+	if (fs::exists(this->filename) && !fs::is_empty(this->filename)) {
+		std::ifstream package_config_in(this->filename);
+		this->config_json = nlohmann::ordered_json::parse(package_config_in);
+	}
+}
+
+int PackageConfig::add(const Package &package) {
+	if (this->contains(package)) {
+		return 0;
+	}
+
+	this->config_json
+		["dependencies"]
+			[package.get_name()] = package.get_version().string();
+	this->save();
+	return 1;
+}
+
+int PackageConfig::remove(const Package &package) {
+	if (!this->contains(package)) {
+		return 0;
+	}
+
+	this->config_json["dependencies"].erase(package.get_name());
+	this->save();
+	return 1;
+}
+
+std::unordered_set<Package, Package::Hash> PackageConfig::list() const {
+	if (!this->config_json.contains("dependencies")) {
+		return std::unordered_set<Package, Package::Hash>();
+	}
+
+	std::unordered_set<Package, Package::Hash> packages;
+	for (const auto &[name, content] : this->config_json["dependencies"]
+									       .items()) {
+		packages.insert(Package(name, SemVer(content.get<std::string>())));
+	}
+	return packages;
+}
+
+bool PackageConfig::contains(const Package &package) const {
+	if (this->list().find(package) != this->list().end()) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+Package PackageConfig::create_default() {
+	std::string default_package_name = fs::current_path().stem().string();
+	SemVer default_package_version("0.1.0");
+	this->config_json["name"] = default_package_name;
+	this->config_json["version"] = default_package_version.string();
+	this->config_json["url"] = "";
+	this->config_json["description"] = "";
+	this->config_json["author"] = "";
+	this->config_json["license"] = "";
+	this->save();
+	return Package(default_package_name, default_package_version);
+}
+
+void PackageConfig::save() {
+	std::ofstream package_config_out(this->filename);
+	package_config_out << std::setw(4) << this->config_json;
+}
+\end{lstlisting}
+
+
+\subsection{Съхранение на графа на зависимостите \\ (Lockfile)}
+
+Този файл описва графа на зависимостите на текущия пакет. Той предоставя две
+допълнителни функции, които добавят и премахват преходни зависимости към и от
+директните зависимости на текущия пакет.
+
+\begin{lstlisting}[style=cpp,
+				   caption={Файл, описващ графа на зависимостите на
+				   			текущия пакет},
+				   label={lst:lockfile}]
+Lockfile::Lockfile(const fs::path &filename) : Repository(filename) {
+	if (fs::exists(this->filename) && !fs::is_empty(this->filename)) {
+		std::ifstream lockfile_in(this->filename);
+		this->lockfile_json = json::parse(lockfile_in);
+	}
+}
+
+int Lockfile::add(const Package &package) {
+	if (this->contains(package)) {
+		return 0;
+	}
+
+	this->lockfile_json
+		["dependencies"]
+			[package.get_name()]
+				["version"] = package.get_version().string();
+	this->save();
+	return 1;
+}
+
+int Lockfile::add_dep(const Package &existing_package, const Package &dep) {
+	if (!this->contains(existing_package) ||
+		this->lockfile_json
+			["dependencies"]
+				[existing_package.get_name()]
+					["dependencies"].contains(dep.get_name())) {
+		return 0;
+	}
+
+	this->lockfile_json
+		["dependencies"]
+			[existing_package.get_name()]
+				["dependencies"]
+					[dep.get_name()] = dep.get_version().string();
+	this->save();
+	return 1;
+}
+
+int Lockfile::remove(const Package &package) {
+	if (!this->contains(package)) {
+		return 0;
+	}
+
+	this->lockfile_json
+		["dependencies"].erase(package.get_name());
+	this->save();
+	return 1;
+}
+
+int Lockfile::remove_dep(const Package &existing_package, const Package &dep) {
+	if (!this->contains(existing_package) ||
+		!this->lockfile_json
+			["dependencies"]
+				[existing_package.get_name()]
+					["dependencies"].contains(dep.get_name())) {
+		return 0;
+	}
+
+	this->lockfile_json
+		["dependencies"]
+			[existing_package.get_name()]
+				["dependencies"].erase(dep.get_name());
+	this->save();
+	return 1;
+}
+
+std::unordered_set<Package, Package::Hash> Lockfile::list() const {
+	if (!this->lockfile_json.contains("dependencies")) {
+		return std::unordered_set<Package, Package::Hash>();
+	}
+
+	std::unordered_set<Package, Package::Hash> packages;
+	for (const auto &[name, content] : this->lockfile_json["dependencies"]
+									       .items()) {
+		packages.insert(
+			Package(name, SemVer(content["version"].get<std::string>()))
+		);
+	}
+	return packages;
+}
+
+bool Lockfile::contains(const Package &package) const {
+	if (this->list().find(package) != this->list().end()) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool Lockfile::contains_dep(const Package &package) {
+	for (const auto &dep : this->lockfile_json["dependencies"]) {
+		if (dep.contains("dependencies")) {
+			for (const auto &[name, version] : dep["dependencies"].items()) {
+				if(name == package.get_name()) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+void Lockfile::save() {
+	std::ofstream lockfile_out(this->filename);
+	lockfile_out << std::setw(4) << this->lockfile_json;
+}
+\end{lstlisting}
+
+
+\subsection{Глобално инсталирани пакети}
+
+Мястото за съхранение на глобално инсталираните пакети и техните метаданни се
+определя от спецификацията за основни директории \cite{xdg} (XDG Base Directory
+Specification). Според нея основната директория за данни се определя по следния
+начин:
+
+\begin{itemize}
+	\item За Windows - \texttt{\%APPDATA\%\textbackslash...}
+	\item За Linux - \texttt{\$\{HOME\}/.local/share/cpm}
+\end{itemize}
+
+Списъкът с глобално инсталирани пакети се съхранява във файла
+\texttt{packages.bd3}, намиращ се в директорията на потребителя. Файлът
+представлява sqlite база данни, в която има една таблица на име
+\texttt{installed\_packages}. В нея се съхранява информацията за инсталираните
+пакети. Самите пакети се инсталират в поддиректорията \texttt{lib} (съкратено от
+libraries).
+
+\begin{lstlisting}[style=cpp,
+				   caption=Хранилище за глобално инсталирани пакети,
+				   label={lst:package-db}]
+PackageDB::PackageDB(const fs::path &filename) : Repository(filename) {
+	fs::create_directories(filename.parent_path());
+	int err = sqlite3_open(filename.string().c_str(), &this->package_db);
+	if (err) {
+		sqlite3_close(this->package_db);
+		throw std::runtime_error("Can't open package DB!");
+	}
+
+	char *err_msg;
+	err = sqlite3_exec(this->package_db,
+		"CREATE TABLE IF NOT EXISTS installed_packages("
+			"name VARCHAR(100) NOT NULL,"
+			"version VARCHAR(100) NOT NULL,"
+			"PRIMARY KEY (name, version)"
+		");"
+	, nullptr, 0, &err_msg);
+	if (err != SQLITE_OK) {
+		sqlite3_free(err_msg);
+		throw std::runtime_error("Can't create packages table!");
+	}
+
+	sqlite3_free(err_msg);
+}
+
+PackageDB::~PackageDB() {
+	sqlite3_close(this->package_db);
+}
+
+int PackageDB::add(const cpm::Package &package) {
+	sqlite3_stmt *stmt;
+	sqlite3_prepare(this->package_db,
+		"INSERT INTO installed_packages VALUES (?, ?);"
+	, -1, &stmt, nullptr);
+	
+	sqlite3_bind_text(stmt, 1, package.get_name().c_str(),
+					  package.get_name().length(), SQLITE_TRANSIENT);
+	sqlite3_bind_text(stmt, 2, package.get_version().string().c_str(),
+					  package.get_version().string().length(), SQLITE_TRANSIENT);
+	sqlite3_step(stmt);
+	int rows_modified = sqlite3_total_changes(this->package_db);
+
+	sqlite3_finalize(stmt);
+	return rows_modified;
+}
+
+int PackageDB::remove(const cpm::Package &package) {
+	sqlite3_stmt *stmt;
+	sqlite3_prepare(this->package_db,
+		"DELETE FROM installed_packages WHERE name = ?;"
+	, -1, &stmt, nullptr);
+	
+	sqlite3_bind_text(stmt, 1, package.get_name().c_str(),
+					  package.get_name().length(), SQLITE_TRANSIENT);
+	sqlite3_step(stmt);
+	int rows_modified = sqlite3_total_changes(this->package_db);
+	
+	sqlite3_finalize(stmt);
+	return rows_modified;
+}
+
+std::unordered_set<Package, Package::Hash> PackageDB::list() const {
+	std::unordered_set<Package, Package::Hash> packages;
+	char *err_msg;
+	int err = sqlite3_exec(
+		this->package_db, "SELECT name, version FROM installed_packages;",
+		[](void *packages, int cols, char **col_vals, char **col_names) {
+			Package package(col_vals[0], SemVer(col_vals[1]));
+			static_cast<std::unordered_set<Package, Package::Hash> *>
+				(packages)->insert(package);
+			return EXIT_SUCCESS;
+		}, &packages, &err_msg);
+	if (err != SQLITE_OK) {
+		sqlite3_free(err_msg);
+		throw std::runtime_error("Can't get installed packages!");
+	}
+
+	sqlite3_free(err_msg);
+	return packages;
+}
+
+bool PackageDB::contains(const Package &package) const {
+	sqlite3_stmt *stmt;
+	sqlite3_prepare(this->package_db,
+		"SELECT * FROM installed_packages WHERE name = ?;"
+	, -1, &stmt, nullptr);
+	
+	sqlite3_bind_text(stmt, 1, package.get_name().c_str(),
+					  package.get_name().length(), SQLITE_TRANSIENT);
+	int row_count = 0;
+	
+	while (sqlite3_step(stmt) != SQLITE_DONE) {
+		row_count++;
+	}
+	
+	sqlite3_finalize(stmt);
+	
+	if (row_count > 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
+\end{lstlisting}
