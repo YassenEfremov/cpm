@@ -192,7 +192,8 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
     for (const auto &current_package : packages_to_install) {
         threads.emplace_back(std::thread([=, &all_progress]() {
             CPM_LOG_INFO("Checking dependency {} ...", current_package.get_name());
-            if (this->context.lockfile->contains(current_package)) {
+            if (this->context.lockfile->contains(current_package) &&
+                fs::exists(this->context.cwd / paths::packages_dir / current_package.get_name() / "")) {
                 CPM_LOG_INFO("Dependency {} is already satisfied! Skipping ...", current_package.get_name());
                 all_progress.insert({
                     current_package,
@@ -285,7 +286,7 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
     for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
         this->context.lockfile->add_dep(package, Package(name, content["version"].get<std::string>()));
         CPM_LOG_INFO("symlinking direct dependency: {} ...", name);
-        fs::create_directory(output_dir / package.get_name() / paths::packages_dir);
+        fs::create_directories(output_dir / package.get_name() / paths::packages_dir);
         fs::create_directory_symlink(
             output_dir / name,
             output_dir / package.get_name() / paths::packages_dir / name
@@ -298,7 +299,7 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
                 this->context.lockfile->add_dep(Package(name, content["version"].get<std::string>()),
                                                 Package(dep_name, dep_version.get<std::string>()));
                 CPM_LOG_INFO("symlinking transitive dependency: {} ...", dep_name);
-                fs::create_directory(output_dir / name / paths::packages_dir);
+                fs::create_directories(output_dir / name / paths::packages_dir);
                 fs::create_directory_symlink(
                     output_dir / dep_name,
                     output_dir / name / paths::packages_dir / dep_name
