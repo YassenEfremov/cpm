@@ -75,25 +75,16 @@ void Parser::parse_args(int argc, char *argv[]) {
     );
 
 
-    // argparse::ArgumentParser update_command("update");
-    // update_command.add_description("Update the specified package/s");
-    // update_command.add_argument("packages")
-    //     .help("updates the specified package/s")
-    //     .required()
-    //     .nargs(argparse::nargs_pattern::at_least_one);
-
     parser.add_subparser(install_command);
     parser.add_subparser(remove_command);
     parser.add_subparser(list_command);
     parser.add_subparser(create_command);
     parser.add_subparser(sync_command);
-    // parser.add_subparser(update_command);
     commands.insert({"install", &install_command});
     commands.insert({"remove", &remove_command});
     commands.insert({"list", &list_command});
     commands.insert({"create", &create_command});
     commands.insert({"sync", &sync_command});
-    // commands.insert({"update", &update_command});
 
     if (argc < 2) {
         throw std::runtime_error(parser.help().str());
@@ -101,23 +92,28 @@ void Parser::parse_args(int argc, char *argv[]) {
     parser.parse_args(argc, argv);
 
 
+    bool run_globally;
+    /**
+     * The function is_used throws if the command doesn't have the specified
+     * option, that why a try/catch block is needed here
+     */
     try {
-        if (commands[argv[1]]->is_used("--global")) {
-            commands[argv[1]]->context = Command::Context{
-                paths::global_dir,
-                std::make_shared<PackageDB>(
-                    paths::global_dir / paths::package_db
-                ),
-                std::make_shared<Lockfile>(
-                    paths::global_dir / paths::lockfile
-                )
-            };
+        run_globally = commands[argv[1]]->is_used("--global");
+    } catch (const std::exception &e) {
+        run_globally = false;
+    }
 
-        } else {
-            throw std::runtime_error("");
-        }
-
-    } catch(const std::exception &e) {
+    if (run_globally) {
+        commands[argv[1]]->context = Command::Context{
+            paths::global_dir,
+            std::make_shared<PackageDB>(
+                paths::global_dir / paths::package_db
+            ),
+            std::make_shared<Lockfile>(
+                paths::global_dir / paths::lockfile
+            )
+        };
+    } else {
         commands[argv[1]]->context = Command::Context{
             fs::current_path(),
             std::make_shared<PackageConfig>(
