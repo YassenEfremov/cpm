@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 1.0.2)
+project(cpm VERSION 1.0.3)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
+set(BUILD_SHARED_LIBS OFF)
 
 
 configure_file(cmake/version.hpp.in ${PROJECT_BINARY_DIR}/version.hpp)
@@ -55,6 +57,12 @@ target_link_libraries(cpm
 		spdlog::spdlog
 		sqlite3
 		zip::zip
+)
+
+
+install(
+	TARGETS cpm
+	DESTINATION bin
 )
 
 install(
