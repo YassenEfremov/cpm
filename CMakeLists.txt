@@ -1,10 +1,16 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cpm VERSION 1.0.3)
+project(cpm
+	VERSION 1.0.4
+	DESCRIPTION "A C/C++ package manager made for my diploma thesis"
+	HOMEPAGE_URL "https://github.com/YassenEfremov/cpm"
+	LANGUAGES CXX
+)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-
 set(BUILD_SHARED_LIBS OFF)
+
+option(CPM_BUILD_TESTS "Build tests" OFF)
 
 
 configure_file(cmake/version.hpp.in ${PROJECT_BINARY_DIR}/version.hpp)
@@ -35,11 +41,15 @@ add_subdirectory(lib/json)
 add_subdirectory(lib/spdlog)
 add_subdirectory(lib/sqlite3)
 add_subdirectory(lib/zip)
-
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND CPM_BUILD_TESTS)
+	include(CTest)
+	enable_testing()
+    add_subdirectory(test)
+endif()
 
 target_include_directories(cpm
 	PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src
 		${PROJECT_BINARY_DIR}
 	 	lib/argparse/include
 		lib/cpr/include
@@ -66,6 +76,6 @@ install(
 )
 
 install(
-	FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/package_locations.json
+	FILES ${CMAKE_SOURCE_DIR}/data/package_locations.json
 	DESTINATION $ENV{HOME}/.local/share/cpm
 )
