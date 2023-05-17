@@ -30,7 +30,9 @@ int PackageConfig::add(const Package &package) {
 		return 0;
 	}
 
-	this->config_json["dependencies"][package.get_name()] = package.get_version().string();
+	this->config_json
+		["dependencies"]
+			[package.get_name()] = package.get_version().string();
 	this->save();
 	return 1;
 }
@@ -40,7 +42,8 @@ int PackageConfig::remove(const Package &package) {
 		return 0;
 	}
 
-	this->config_json["dependencies"].erase(package.get_name());
+	this->config_json
+		["dependencies"].erase(package.get_name());
 	this->save();
 	return 1;
 }

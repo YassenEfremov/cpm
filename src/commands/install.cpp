@@ -127,10 +127,10 @@ void InstallCommand::run() {
 int InstallCommand::install_package(const Package &package,
                                     const fs::path &output_dir) {
 
-    CPM_LOG_INFO("Checking if package {} is already installed ...", package.get_name());
+    CPM_LOG_INFO("Checking if package {} is already installed ...", package.string());
     if (this->check_if_installed(package)) {
         throw std::invalid_argument(fmt::format(
-            "{}: package already installed!", package.get_name()
+            "{}: package already installed!", package.string()
         ));
     }
 
@@ -151,7 +151,7 @@ int InstallCommand::install_package(const Package &package,
 
 bool InstallCommand::check_if_installed(const Package &package) {
     bool specified = this->context.repo->contains(package);
-    bool downloaded = fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
+    bool downloaded = fs::exists(this->context.cwd / paths::packages_dir / package.string() / "");
 
     return specified && downloaded;
 }
@@ -159,12 +159,14 @@ bool InstallCommand::check_if_installed(const Package &package) {
 void InstallCommand::install_all(const Package &package, const std::string &location,
                                  const fs::path &output_dir) {
 
-    CPM_LOG_INFO("obtaining lockfile for package {} ...", package.get_name());
+    CPM_LOG_INFO("obtaining lockfile for package {} ...", package.string());
     CPM_INFO( BLUE_FG(" v ") "Obtaining lockfile ...");
     std::unordered_set<Package, Package::Hash> packages_to_install{package};
     cpr::Response response = cpr::Get(
-        cpr::Url{(paths::api_url / location / package.get_name() /
-                  paths::gh_content / paths::lockfile).string()}
+        cpr::Url{(
+            paths::api_url / location / package.get_name() / paths::gh_content /
+            (paths::lockfile.string() + "?ref=" + package.get_version().string())
+        ).string()}
     );
     json package_lockfile_json;
     if (response.status_code == cpr::status::HTTP_OK) {
@@ -174,7 +176,6 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
         for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
             packages_to_install.insert(Package(name, SemVer(content["version"].get<std::string>())));
         }
-
     }
     std::cout << " done.\n";
 
@@ -191,10 +192,10 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
     for (int i = 0; i < packages_to_install.size() * 2; i++) std::cout << "\n";
     for (const auto &current_package : packages_to_install) {
         threads.emplace_back(std::thread([=, &all_progress]() {
-            CPM_LOG_INFO("Checking dependency {} ...", current_package.get_name());
+            CPM_LOG_INFO("Checking dependency {} ...", current_package.string());
             if (this->context.lockfile->contains(current_package) &&
-                fs::exists(this->context.cwd / paths::packages_dir / current_package.get_name() / "")) {
-                CPM_LOG_INFO("Dependency {} is already satisfied! Skipping ...", current_package.get_name());
+                fs::exists(this->context.cwd / paths::packages_dir / current_package.string() / "")) {
+                CPM_LOG_INFO("Dependency {} is already satisfied! Skipping ...", current_package.string());
                 all_progress.insert({
                     current_package,
                     ProgressBar(
@@ -208,7 +209,7 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
                 refresh_all_progress();
                 return;
             }
-            CPM_LOG_INFO("Dependency {} not found, installing ...", current_package.get_name());
+            CPM_LOG_INFO("Dependency {} not found, installing ...", current_package.string());
 
             CPM_LOG_INFO("downloading package {} ...", current_package.string());
             all_progress.insert({
@@ -258,7 +259,7 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
                 10, '#', total_entries
             );
             this->extract_package(response.text,
-                this->context.cwd / paths::packages_dir / current_package.get_name(),
+                this->context.cwd / paths::packages_dir / current_package.string(),
                 [=, &all_progress](int currentEntry, int totalEntries) {
                     all_progress.at(current_package)++;
                     all_progress.at(current_package).update_suffix(fmt::format(
@@ -280,33 +281,43 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
 
     this->context.lockfile->add(package);
 
-    if (packages_to_install.size() < 2) {
-        return;
-    }
-    for (const auto &[name, content] : package_lockfile_json["dependencies"].items()) {
-        this->context.lockfile->add_dep(package, Package(name, content["version"].get<std::string>()));
-        CPM_LOG_INFO("symlinking direct dependency: {} ...", name);
-        fs::create_directories(output_dir / package.get_name() / paths::packages_dir);
-        fs::create_directory_symlink(
-            output_dir / name,
-            output_dir / package.get_name() / paths::packages_dir / name
-        );
-        CPM_LOG_INFO("symlink created");
+    if (packages_to_install.size() > 1) {
+        for (const auto &[direct_dep_name, content] : package_lockfile_json["dependencies"].items()) {
+            Package direct_dep(direct_dep_name, content["version"].get<std::string>());
+            this->context.lockfile->add_dep(package, direct_dep);
+            CPM_LOG_INFO("symlinking direct dependency: {} ...", direct_dep.string());
+            fs::create_directories(output_dir / package.string() / paths::packages_dir);
+            fs::create_directory_symlink(
+                output_dir / direct_dep.string(),
+                output_dir / package.string() / paths::packages_dir / direct_dep_name
+            );
+            CPM_LOG_INFO("symlink created");
 
-        this->context.lockfile->add(Package(name, content["version"].get<std::string>()));
-        if (content.contains("dependencies")) {
-            for (const auto &[dep_name, dep_version] : content["dependencies"].items()) {
-                this->context.lockfile->add_dep(Package(name, content["version"].get<std::string>()),
-                                                Package(dep_name, dep_version.get<std::string>()));
-                CPM_LOG_INFO("symlinking transitive dependency: {} ...", dep_name);
-                fs::create_directories(output_dir / name / paths::packages_dir);
-                fs::create_directory_symlink(
-                    output_dir / dep_name,
-                    output_dir / name / paths::packages_dir / dep_name
-                );
-                CPM_LOG_INFO("symlink created");
+            this->context.lockfile->add(direct_dep);
+            if (content.contains("dependencies")) {
+                for (const auto &[trans_dep_name, trans_dep_version] : content["dependencies"].items()) {
+                    Package trans_dep(trans_dep_name, trans_dep_version.get<std::string>());
+                    this->context.lockfile->add_dep(direct_dep, trans_dep);
+                    CPM_LOG_INFO("symlinking transitive dependency: {} ...", trans_dep.string());
+                    fs::create_directories(output_dir / trans_dep.string() / paths::packages_dir);
+                    fs::create_directory_symlink(
+                        output_dir / trans_dep.string(),
+                        output_dir / direct_dep.string() / paths::packages_dir / trans_dep_name
+                    );
+                    CPM_LOG_INFO("symlink created");
+                }
             }
         }
+    }
+
+    for (const auto &current_package : packages_to_install) {
+        if (fs::exists(output_dir / current_package.get_name())) {
+            fs::remove(output_dir / current_package.get_name());
+        }
+        fs::create_directory_symlink(
+            output_dir / current_package.string(),
+            output_dir / current_package.get_name()
+        );
     }
 }
 
@@ -324,8 +335,10 @@ cpr::Response InstallCommand::download_package(
         package.get_name(), package.get_version().string()
     );
     cpr::Response response = cpr::Get(
-        cpr::Url{(paths::api_url / location / package.get_name() /
-                  paths::gh_zip / package.get_version().string()).string()},
+        cpr::Url{(
+            paths::api_url / location / package.get_name() /
+            paths::gh_zip / package.get_version().string()
+        ).string()},
         cpr::ProgressCallback(download_progress)
     );
     CPM_LOG_INFO("Response status: {}", response.status_code);

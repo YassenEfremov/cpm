@@ -93,7 +93,7 @@ class Lockfile : public Repository<Package, Package::Hash> {
 	 * 
 	 * @return true if the package is found, false otherwise
 	 */
-	bool contains_dep(const Package &package);
+	bool contains_dep(const Package &package) const;
 
 
 	private:

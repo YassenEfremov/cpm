@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(cpm
-	VERSION 1.0.4
+	VERSION 1.1.0
 	DESCRIPTION "A C/C++ package manager made for my diploma thesis"
 	HOMEPAGE_URL "https://github.com/YassenEfremov/cpm"
 	LANGUAGES CXX
@@ -28,6 +28,7 @@ add_executable(cpm
 	src/dep-man/lockfile.cpp
 	src/logger/logger.cpp
 	src/script/package_config.cpp
+	src/config.cpp
 	src/main.cpp
 	src/package.cpp
 	src/paths.cpp
@@ -70,12 +71,9 @@ target_link_libraries(cpm
 )
 
 
-install(
-	TARGETS cpm
-	DESTINATION bin
-)
+install(TARGETS cpm)
 
 install(
 	FILES ${CMAKE_SOURCE_DIR}/data/package_locations.json
-	DESTINATION $ENV{HOME}/.local/share/cpm
+	DESTINATION /etc/cpm
 )
