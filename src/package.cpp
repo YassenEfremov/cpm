@@ -23,8 +23,7 @@ using json = nlohmann::ordered_json;
 namespace cpm {
 
 std::size_t Package::Hash::operator()(const Package &package) const noexcept {
-	std::size_t h1 = std::hash<std::string>{}(package.get_name());
-	return h1 << 1;
+	return std::hash<std::string>{}(package.string());
 }
 
 Package::Package(const std::string &name, const SemVer &version)

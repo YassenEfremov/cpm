@@ -47,7 +47,7 @@ void SyncCommand::run() {
 
     CPM_INFO("Synchronizing packages with {} ...\n", paths::package_config.string());
 
-    CPM_LOG_INFO("Initializing new packages ...",paths::package_config.string());
+    CPM_LOG_INFO("Initializing packages ...",paths::package_config.string());
     std::unordered_set<Package, Package::Hash> packages_to_install;
     for (auto package : packages) {
         CPM_LOG_INFO("Checking package {} ...", package.string());
@@ -84,11 +84,14 @@ void SyncCommand::run() {
     int unspecified_packages = 0;
     for (const auto &dir_entry : fs::directory_iterator(this->context.cwd / paths::packages_dir / "")) {
 
-        Package package(dir_entry.path().filename().string());
+        if (fs::is_symlink(dir_entry.path())) continue;
+        auto tokens = util::split_string(dir_entry.path().filename().string(), "@");
+        if (tokens.size() < 2) continue;
+        Package package(tokens[0], SemVer(tokens[1]));
 
         if (!this->context.repo->contains(package) &&
             !this->context.lockfile->contains_dep(package)) {
-            CPM_LOG_INFO("Found unspecified package {}, removing", package.get_name());
+            CPM_LOG_INFO("Found unspecified package {}, removing", package.string());
             unspecified_packages += this->remove_package(package);
         }
     }
@@ -108,7 +111,7 @@ int SyncCommand::install_package(const Package &package,
                                     const fs::path &output_dir) {
 
     if (this->check_if_installed(package)) {
-        CPM_INFO("{}: Already installed, skipping ...\n", package.get_name());
+        CPM_INFO("{}: Already installed, skipping ...\n", package.string());
         return 0;
     }
     
@@ -128,7 +131,7 @@ bool SyncCommand::check_if_installed(const Package &package) {
 
 int SyncCommand::remove_package(const Package &package) {
 
-    CPM_INFO("{}: Not specified, removing ...\n", package.get_name());
+    CPM_INFO("{}: Not specified, removing ...\n", package.string());
     
     std::uintmax_t n = this->delete_all(package);
     CPM_INFO(RED_FG(" - ") "Removed {} entries\n", n);

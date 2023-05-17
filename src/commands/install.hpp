@@ -65,7 +65,7 @@ class InstallCommand : virtual public Command {
 	virtual bool check_if_installed(const Package &package);
 
 	/**
-	 * @brief Install the specified package and its dependencies recursively
+	 * @brief Install the specified package and its dependencies
 	 * 
 	 * @param package the package to install
 	 * @param location a GitHub profile from which the package could be

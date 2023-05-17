@@ -24,7 +24,7 @@ void CreateCommand::run() {
     PackageConfig package_config(this->context.cwd / paths::package_config);
     Package new_package = package_config.create_default();
 
-    CPM_INFO("Created package \"{}\"\n", new_package.get_name());
+    CPM_INFO("Created package \"{}\"\n", new_package.string());
 
     CPM_LOG_INFO("===== Finished create. =====");
 }

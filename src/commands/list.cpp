@@ -7,6 +7,7 @@
 #include "paths.hpp"
 #include "script/package_config.hpp"
 #include "semver.hpp"
+#include "util.hpp"
 
 #include <filesystem>
 #include <string>
@@ -66,11 +67,13 @@ void ListCommand::run() {
     int unspecified = 0;
     if (fs::exists(this->context.cwd / paths::packages_dir / "")) {
         for (const auto &dir_entry : fs::directory_iterator(this->context.cwd / paths::packages_dir / "")) {
-            Package package(dir_entry.path().filename().string());
+            auto tokens = util::split_string(dir_entry.path().filename().string(), "@");
+            if (tokens.size() < 2) continue;
+            Package package(tokens[0], SemVer(tokens[1]));
             if (!this->context.repo->contains(package) &&
                 !this->context.lockfile->contains_dep(package)) {
                 unspecified++;
-                CPM_INFO("  {} (unspecified)\n", package.get_name());
+                CPM_INFO("  {} (unspecified)\n", package.string());
             }
         }
     }

@@ -10,6 +10,8 @@
 #include <memory>
 #include <string>
 
+namespace fs = std::filesystem;
+
 
 namespace cpm {
 
@@ -34,6 +36,7 @@ std::shared_ptr<spdlog::logger> CLILogger::get_stderr_logger() {
 
 
 void FileLogger::init() {
+	fs::create_directories(paths::global_dir / paths::logs_dir);
 	auto file_logger = spdlog::rotating_logger_mt(
 		"file_logger",
 		(paths::global_dir / paths::logs_dir / paths::log_base_name).string(),

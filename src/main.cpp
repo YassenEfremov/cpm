@@ -1,4 +1,5 @@
 #include "cli/parser.hpp"
+#include "config.hpp"
 #include "logger/logger.hpp"
 
 #include <chrono>
@@ -34,6 +35,7 @@ int main(int argc, char *argv[]) {
 
     cpm::CLILogger::init();
     cpm::FileLogger::init();
+    cpm::Config::init();
 
     try {
         cpm::Parser::parse_args(argc, argv);
