@@ -51,9 +51,9 @@ void Package::init() {
 	this->location = "";
 	for (const auto &package_location : package_locations) {
 		CPM_LOG_INFO("Trying {}", package_location);
-		cpr::Response response = cpr::Head(
-			cpr::Url{(paths::api_url / package_location / this->name).string()}
-		);
+		cpr::Response response = cpr::Head(cpr::Url{
+			fmt::format("{}/{}/{}", paths::api_url, package_location, this->name)
+		});
 		if (response.status_code == cpr::status::HTTP_OK) {
 			CPM_LOG_INFO("Success (status {}) using {}",
 						 response.status_code, package_location);
@@ -70,10 +70,9 @@ void Package::init() {
 	}
 
 	CPM_LOG_INFO("Checking version tags of package {} ...", this->name);
-	cpr::Response response = cpr::Get(
-		cpr::Url{(paths::api_url / location / this->name /
-					paths::gh_tags).string()}
-	);
+	cpr::Response response = cpr::Get(cpr::Url{
+		fmt::format("{}/{}/{}/{}", paths::api_url, this->location, this->name, paths::gh_tags)
+	});
 	json tags_json;
 	if (response.status_code == cpr::status::HTTP_OK) {
 		json tags_json = json::parse(response.text);
@@ -86,10 +85,10 @@ void Package::init() {
 
 	if (!this->version.is_specified()) {
 		CPM_LOG_INFO("Getting latest version for package {} ...", this->name);
-		cpr::Response response = cpr::Get(
-			cpr::Url{(paths::api_url / location / this->name /
-					  paths::gh_content / paths::package_config).string()}
-		);
+		cpr::Response response = cpr::Get(cpr::Url{
+			fmt::format("{}/{}/{}/{}/{}",
+						paths::api_url, this->location, this->name, paths::gh_content, paths::package_config.string())
+		});
 		json package_config_json;
 		if (response.status_code == cpr::status::HTTP_OK) {
 			json response_json = json::parse(response.text);
@@ -106,10 +105,10 @@ void Package::init() {
 
 	} else {
 		CPM_LOG_INFO("Checking version {} for package {}", this->version.string(), this->name);
-		cpr::Response response = cpr::Head(
-			cpr::Url{(paths::api_url / this->location / this->name /
-					  paths::gh_zip / this->version.string()).string()}
-		);
+		cpr::Response response = cpr::Head(cpr::Url{
+			fmt::format("{}/{}/{}/{}/{}",
+						paths::api_url, this->location, this->name, paths::gh_zip, this->version.string())
+		});
 		if (response.status_code != cpr::status::HTTP_OK) {
 			throw std::invalid_argument(fmt::format(
 				"{}: version {} not found!", this->name, this->version.string()

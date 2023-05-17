@@ -30,12 +30,12 @@ const fs::path logs_dir = "logs";
 
 const fs::path log_base_name = "cpm.log";
 
-const fs::path api_url = "https://api.github.com/repos";
+const std::string api_url = "https://api.github.com/repos";
 
-const fs::path gh_zip = "zipball";
+const std::string gh_zip = "zipball";
 
-const fs::path gh_tags = "tags";
+const std::string gh_tags = "tags";
 
-const fs::path gh_content = "contents";
+const std::string gh_content = "contents";
 
 } // namespace cpm::paths

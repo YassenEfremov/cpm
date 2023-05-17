@@ -53,22 +53,22 @@ extern const fs::path log_base_name;
 /**
  * @brief The API URL which cpm should use to download packages
  */
-extern const fs::path api_url;
+extern const std::string api_url;
 
 /**
  * @brief GitHub API identifier for zip archive
  */
-extern const fs::path gh_zip;
+extern const std::string gh_zip;
 
 /**
  * @brief GitHub API identifier for repo tags
  */
-extern const fs::path gh_tags;
+extern const std::string gh_tags;
 
 /**
  * @brief GitHub API identifier for repo contents
  */
-extern const fs::path gh_content;
+extern const std::string gh_content;
 
 } // namespace cpm::paths
 

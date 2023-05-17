@@ -162,12 +162,11 @@ void InstallCommand::install_all(const Package &package, const std::string &loca
     CPM_LOG_INFO("obtaining lockfile for package {} ...", package.string());
     CPM_INFO( BLUE_FG(" v ") "Obtaining lockfile ...");
     std::unordered_set<Package, Package::Hash> packages_to_install{package};
-    cpr::Response response = cpr::Get(
-        cpr::Url{(
-            paths::api_url / location / package.get_name() / paths::gh_content /
-            (paths::lockfile.string() + "?ref=" + package.get_version().string())
-        ).string()}
-    );
+    cpr::Response response = cpr::Get(cpr::Url{
+        fmt::format("{}/{}/{}/{}/{}?ref={}",
+                    paths::api_url, location, package.get_name(), paths::gh_content, paths::lockfile.string(),
+                    package.get_version().string())
+    });
     json package_lockfile_json;
     if (response.status_code == cpr::status::HTTP_OK) {
         json response_json = json::parse(response.text);
@@ -331,14 +330,14 @@ cpr::Response InstallCommand::download_package(
 ) {
     CPM_LOG_INFO(
         "GET {}/{}/{}/{}/{}",
-        paths::api_url.string(), location, paths::gh_zip,
+        paths::api_url, location, paths::gh_zip,
         package.get_name(), package.get_version().string()
     );
     cpr::Response response = cpr::Get(
-        cpr::Url{(
-            paths::api_url / location / package.get_name() /
-            paths::gh_zip / package.get_version().string()
-        ).string()},
+        cpr::Url{
+            fmt::format("{}/{}/{}/{}",
+                        paths::api_url, location, package.get_name(), paths::gh_zip, package.get_version().string())
+        },
         cpr::ProgressCallback(download_progress)
     );
     CPM_LOG_INFO("Response status: {}", response.status_code);
