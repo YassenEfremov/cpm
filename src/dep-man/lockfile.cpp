@@ -98,11 +98,8 @@ std::unordered_set<Package, Package::Hash> Lockfile::list() const {
 }
 
 bool Lockfile::contains(const Package &package) const {
-	if (this->list().find(package) != this->list().end()) {
-		return true;
-	} else {
-		return false;
-	}
+	auto packages = this->list();
+	return packages.find(package) != packages.end();
 }
 
 bool Lockfile::contains_dep(const Package &package) const {

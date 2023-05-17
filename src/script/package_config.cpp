@@ -61,11 +61,8 @@ std::unordered_set<Package, Package::Hash> PackageConfig::list() const {
 }
 
 bool PackageConfig::contains(const Package &package) const {
-	if (this->list().find(package) != this->list().end()) {
-		return true;
-	} else {
-		return false;
-	}
+	auto packages = this->list();
+	return packages.find(package) != packages.end();
 }
 
 Package PackageConfig::create_default() {
