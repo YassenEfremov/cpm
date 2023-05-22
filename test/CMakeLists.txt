@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.1.0)
 project(test_cpm VERSION 1.0.0)
 
 # list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-
 # include(CodeCoverage)
 # append_coverage_compiler_flags()
 
@@ -31,6 +30,16 @@ link_libraries(
 )
 
 
+add_executable(test_lockfile
+	test_lockfile.cpp
+	${CMAKE_SOURCE_DIR}/src/logger/logger.cpp
+	${CMAKE_SOURCE_DIR}/src/dep-man/lockfile.cpp
+	${CMAKE_SOURCE_DIR}/src/package.cpp
+	${CMAKE_SOURCE_DIR}/src/paths.cpp
+	${CMAKE_SOURCE_DIR}/src/semver.cpp
+	${CMAKE_SOURCE_DIR}/src/util.cpp
+)
+
 add_executable(test_package_config
 	test_package_config.cpp
 	${CMAKE_SOURCE_DIR}/src/logger/logger.cpp
@@ -54,10 +63,15 @@ add_executable(test_util
 
 # setup_target_for_coverage_gcovr_html(
 # 	NAME coverage
-# 	EXECUTABLE test_split_string
+# 	EXECUTABLE test_util
 # 	# BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src"
 # 	# EXCLUDE "dir2/*"
 # )
+
+add_test(
+	NAME test_lockfile
+	COMMAND test_lockfile
+)
 
 add_test(
 	NAME test_package_config

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(cpm
-	VERSION 1.1.2
+	VERSION 1.1.3
 	DESCRIPTION "A C/C++ package manager made for my diploma thesis"
 	HOMEPAGE_URL "https://github.com/YassenEfremov/cpm"
 	LANGUAGES CXX

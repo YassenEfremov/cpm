@@ -7,7 +7,6 @@
 #include <filesystem>
 #include <fstream>
 #include <unordered_set>	
-#include <vector>
 
 namespace fs = std::filesystem;
 using json = nlohmann::ordered_json;
@@ -23,11 +22,18 @@ SCENARIO("package config basic operations", "[package_config]") {
 		WHEN("a package is added") {
 			cpm::Package package("test-package", cpm::SemVer("1.0.0"));
 			package_config.add(package);
-			json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
 
 			THEN("the package config contains it") {
-				CHECK(package_config_json["dependencies"].contains(package.get_name()));
-				CHECK(package_config_json["dependencies"][package.get_name()] == package.get_version().string());
+				json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
+				CHECK(
+					package_config_json
+						["dependencies"].contains(package.get_name())
+				);
+				CHECK(
+					package_config_json
+						["dependencies"]
+							[package.get_name()] == package.get_version().string()
+				);
 			}
 		}
 
@@ -35,10 +41,13 @@ SCENARIO("package config basic operations", "[package_config]") {
 			cpm::Package package("test-package", cpm::SemVer("1.0.0"));
 			package_config.add(package);
 			package_config.remove(package);
-			json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
 
 			THEN("the package config doesn't contain it") {
-				CHECK_FALSE(package_config_json["dependencies"].contains(package.get_name()));
+				json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
+				CHECK_FALSE(
+					package_config_json
+						["dependencies"].contains(package.get_name())
+				);
 			}
 		}
 
@@ -59,20 +68,27 @@ SCENARIO("package config basic operations", "[package_config]") {
 		WHEN("checking if the package config contains a package") {
 			cpm::Package package("test-package", cpm::SemVer("1.0.0"));
 			package_config.add(package);
-			json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
 
 			THEN("a result of true of false is returned") {
 				CHECK(package_config.contains(package));
-				CHECK(package_config_json["dependencies"].contains(package.get_name()));
-				CHECK(package_config_json["dependencies"][package.get_name()] == package.get_version().string());
+				json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
+				CHECK(
+					package_config_json
+						["dependencies"].contains(package.get_name())
+				);
+				CHECK(
+					package_config_json
+						["dependencies"]
+							[package.get_name()] == package.get_version().string()
+				);
 			}
 		}
 
 		WHEN("a default package config is created") {
 			package_config.create_default();
-			json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
 
 			THEN("its name and version have default values") {
+				json package_config_json = json::parse(std::ifstream("test_cpm_pack.json"));
 				CHECK(package_config_json["name"] == fs::current_path().filename().string());
 				CHECK(package_config_json["version"] == "0.1.0");
 			}
