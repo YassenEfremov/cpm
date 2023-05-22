@@ -48,7 +48,7 @@ void SyncCommand::run() {
     CPM_INFO("Synchronizing packages with {} ...\n", paths::package_config.string());
 
     CPM_LOG_INFO("Initializing packages ...",paths::package_config.string());
-    std::unordered_set<Package, Package::Hash> packages_to_install;
+    decltype(packages) packages_to_install;
     for (auto package : packages) {
         CPM_LOG_INFO("Checking package {} ...", package.string());
         CPM_INFO("Checking package {} ...", package.string());

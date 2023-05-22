@@ -12,8 +12,8 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/lib/Catch2/src
 	# ${CMAKE_SOURCE_DIR}/lib/argparse/include
-	# ${CMAKE_SOURCE_DIR}/lib/cpr/include
-	# ${CMAKE_SOURCE_DIR}/lib/json/include
+	${CMAKE_SOURCE_DIR}/lib/cpr/include
+	${CMAKE_SOURCE_DIR}/lib/json/include
 	${CMAKE_SOURCE_DIR}/lib/spdlog/include
 	# ${CMAKE_SOURCE_DIR}/lib/sqlite3
 	# ${CMAKE_SOURCE_DIR}/lib/zip/src
@@ -23,13 +23,23 @@ include_directories(
 link_libraries(
 	Catch2::Catch2WithMain
 	# argparse::argparse
-	# cpr::cpr
-	# nlohmann_json::nlohmann_json
+	cpr::cpr
+	nlohmann_json::nlohmann_json
 	spdlog::spdlog
 	# sqlite3
 	# zip::zip
 )
 
+
+add_executable(test_package_config
+	test_package_config.cpp
+	${CMAKE_SOURCE_DIR}/src/logger/logger.cpp
+	${CMAKE_SOURCE_DIR}/src/script/package_config.cpp
+	${CMAKE_SOURCE_DIR}/src/package.cpp
+	${CMAKE_SOURCE_DIR}/src/paths.cpp
+	${CMAKE_SOURCE_DIR}/src/semver.cpp
+	${CMAKE_SOURCE_DIR}/src/util.cpp
+)
 
 add_executable(test_semver
 	test_semver.cpp
@@ -37,8 +47,8 @@ add_executable(test_semver
 	${CMAKE_SOURCE_DIR}/src/util.cpp
 )
 
-add_executable(test_split_string
-	test_split_string.cpp
+add_executable(test_util
+	test_util.cpp
 	${CMAKE_SOURCE_DIR}/src/util.cpp
 )
 
@@ -50,11 +60,16 @@ add_executable(test_split_string
 # )
 
 add_test(
+	NAME test_package_config
+	COMMAND test_package_config
+)
+
+add_test(
 	NAME test_semver
 	COMMAND test_semver
 )
 
 add_test(
-	NAME test_split_string
-	COMMAND test_split_string
+	NAME test_util
+	COMMAND test_util
 )
