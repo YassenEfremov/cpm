@@ -2,7 +2,7 @@
 
 CPM is a **C/C++** **P**ackage **M**anager made for my diploma thesis.
 
-## Installation
+## How to install
 
 Clone the repository and execute the following commands:
 
@@ -15,3 +15,7 @@ cmake .. -G Ninja
 ninja
 sudo ninja install
 ```
+
+## Available packages
+
+The packages that can be installed with `cpm` can be found [here](https://github.com/orgs/cpm-examples/repositories).
