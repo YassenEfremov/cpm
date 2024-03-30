@@ -2,9 +2,18 @@
 
 CPM is a **C/C++** **P**ackage **M**anager made for my diploma thesis.
 
-## How to install
+## Installation
 
-Clone the repository and execute the following commands:
+### Windows and Linux
+
+Check out the latest release [here](https://github.com/YassenEfremov/cpm/releases/latest) for binaries, installers and tarballs.
+
+
+### Build from source
+
+To build the project you need [CMake](https://cmake.org/) and [ninja](https://ninja-build.org/).
+
+After that clone the repository and execute the following commands:
 
 ```sh
 cd cpm

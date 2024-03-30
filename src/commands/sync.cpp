@@ -47,7 +47,7 @@ void SyncCommand::run() {
 
     CPM_INFO("Synchronizing packages with {} ...\n", paths::package_config.string());
 
-    CPM_LOG_INFO("Initializing packages ...",paths::package_config.string());
+    CPM_LOG_INFO("Initializing packages ...", paths::package_config.string());
     decltype(packages) packages_to_install;
     for (auto package : packages) {
         CPM_LOG_INFO("Checking package {} ...", package.string());
@@ -126,7 +126,9 @@ int SyncCommand::install_package(const Package &package,
 }
 
 bool SyncCommand::check_if_installed(const Package &package) {
-    return fs::exists(this->context.cwd / paths::packages_dir / package.get_name() / "");
+    return fs::exists(this->context.cwd / paths::packages_dir / package.get_name()) &&
+           fs::read_symlink(this->context.cwd / paths::packages_dir / package.get_name()) ==
+           this->context.cwd / paths::packages_dir / package.string();
 }
 
 int SyncCommand::remove_package(const Package &package) {

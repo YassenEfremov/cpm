@@ -170,7 +170,9 @@ std::uintmax_t RemoveCommand::delete_all(const Package &package) {
 
     } else {
         if (fs::exists(this->context.cwd / paths::packages_dir / package.get_name()) &&
-            fs::is_symlink(this->context.cwd / paths::packages_dir / package.get_name())) {
+            fs::is_symlink(this->context.cwd / paths::packages_dir / package.get_name()) &&
+            fs::read_symlink(this->context.cwd / paths::packages_dir / package.get_name()) ==
+            this->context.cwd / paths::packages_dir / package.string()) {
             fs::remove(this->context.cwd / paths::packages_dir / package.get_name());
         }
         total_entries += fs::remove_all(this->context.cwd / paths::packages_dir / package.string() / "");
