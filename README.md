@@ -18,11 +18,10 @@ After that clone the repository and execute the following commands:
 ```sh
 cd cpm
 git submodule update --init --progress
-mkdir build
-cd build
+mkdir build && cd build
 cmake .. -G Ninja
-ninja
-sudo ninja install
+cmake --build .
+cmake --install . # requires sudo or Administrator
 ```
 
 ## Available packages
