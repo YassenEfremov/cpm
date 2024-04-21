@@ -1,4 +1,5 @@
 #include "paths.hpp"
+#include "install_prefix.hpp"
 
 #include <filesystem>
 #include <string>
@@ -9,6 +10,8 @@ namespace fs = std::filesystem;
 
 
 namespace cpm::paths {
+
+const fs::path install_prefix = INSTALL_PREFIX;
 
 const fs::path packages_dir = "lib";
 

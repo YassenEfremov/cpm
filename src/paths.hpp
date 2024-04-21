@@ -10,7 +10,12 @@ namespace fs = std::filesystem;
 namespace cpm::paths {
 
 /**
- * @brief The directory under which packages are installed
+ * @brief The directory in which CPM is installed
+ */
+extern const fs::path install_prefix;
+
+/**
+ * @brief The directory in which packages are installed
  */
 extern const fs::path packages_dir;
 

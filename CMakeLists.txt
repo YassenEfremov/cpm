@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.27.0)
 project(cpm
-	VERSION 1.1.4
+	VERSION 1.2.0
 	DESCRIPTION "A C/C++ package manager made for my diploma thesis"
 	HOMEPAGE_URL "https://github.com/YassenEfremov/cpm"
 	LANGUAGES CXX
@@ -13,7 +13,8 @@ set(BUILD_SHARED_LIBS OFF)
 option(CPM_BUILD_TESTS "Build tests" OFF)
 
 
-configure_file(cmake/version.hpp.in ${PROJECT_BINARY_DIR}/version.hpp)
+configure_file(cmake/version.hpp.in version.hpp)
+configure_file(cmake/install_prefix.hpp.in install_prefix.hpp)
 
 add_executable(cpm
 	src/cli/parser.cpp
@@ -71,9 +72,22 @@ target_link_libraries(cpm
 )
 
 
-install(TARGETS cpm)
+install(
+	TARGETS cpm
+	DESTINATION bin
+)
 
 install(
 	FILES ${CMAKE_SOURCE_DIR}/data/package_locations.json
-	DESTINATION /etc/cpm
+	DESTINATION share/${PROJECT_NAME}
 )
+
+
+set(CPACK_INNOSETUP_USE_MODERN_WIZARD ON)
+
+include(InstallRequiredSystemLibraries)
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
+set(CPACK_PACKAGE_VERSION_MAJOR "${cpm_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${cpm_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${cpm_VERSION_PATCH}")
+include(CPack)
