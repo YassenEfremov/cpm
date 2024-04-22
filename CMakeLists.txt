@@ -51,7 +51,7 @@ endif()
 
 target_include_directories(cpm
 	PRIVATE
-		${CMAKE_SOURCE_DIR}/src
+		${PROJECT_SOURCE_DIR}/src
 		${PROJECT_BINARY_DIR}
 	 	lib/argparse/include
 		lib/cpr/include
@@ -78,7 +78,7 @@ install(
 )
 
 install(
-	FILES ${CMAKE_SOURCE_DIR}/data/package_locations.json
+	FILES ${PROJECT_SOURCE_DIR}/data/package_locations.json
 	DESTINATION share/${PROJECT_NAME}
 )
 
@@ -86,7 +86,7 @@ install(
 set(CPACK_INNOSETUP_USE_MODERN_WIZARD ON)
 
 include(InstallRequiredSystemLibraries)
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
+set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE.txt")
 set(CPACK_PACKAGE_VERSION_MAJOR "${cpm_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${cpm_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${cpm_VERSION_PATCH}")

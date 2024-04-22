@@ -1,22 +1,22 @@
-cmake_minimum_required(VERSION 3.1.0)
-project(test_cpm VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.27.0)
+project(cpm_test VERSION 1.0.1)
 
 # list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # include(CodeCoverage)
 # append_coverage_compiler_flags()
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Catch2 ${CMAKE_BINARY_DIR}/lib/Catch2)
+add_subdirectory(${cpm_SOURCE_DIR}/lib/Catch2 ${cpm_BINARY_DIR}/lib/Catch2)
 
 include_directories(
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/lib/Catch2/src
-	# ${CMAKE_SOURCE_DIR}/lib/argparse/include
-	${CMAKE_SOURCE_DIR}/lib/cpr/include
-	${CMAKE_SOURCE_DIR}/lib/json/include
-	${CMAKE_SOURCE_DIR}/lib/spdlog/include
-	# ${CMAKE_SOURCE_DIR}/lib/sqlite3
-	# ${CMAKE_SOURCE_DIR}/lib/zip/src
-	${PROJECT_BINARY_DIR}
+	${cpm_SOURCE_DIR}/src
+	${cpm_SOURCE_DIR}/lib/Catch2/src
+	# ${cpm_SOURCE_DIR}/lib/argparse/include
+	${cpm_SOURCE_DIR}/lib/cpr/include
+	${cpm_SOURCE_DIR}/lib/json/include
+	${cpm_SOURCE_DIR}/lib/spdlog/include
+	# ${cpm_SOURCE_DIR}/lib/sqlite3
+	# ${cpm_SOURCE_DIR}/lib/zip/src
+	${cpm_BINARY_DIR}
 )
 
 link_libraries(
@@ -32,33 +32,33 @@ link_libraries(
 
 add_executable(test_lockfile
 	test_lockfile.cpp
-	${CMAKE_SOURCE_DIR}/src/logger/logger.cpp
-	${CMAKE_SOURCE_DIR}/src/dep-man/lockfile.cpp
-	${CMAKE_SOURCE_DIR}/src/package.cpp
-	${CMAKE_SOURCE_DIR}/src/paths.cpp
-	${CMAKE_SOURCE_DIR}/src/semver.cpp
-	${CMAKE_SOURCE_DIR}/src/util.cpp
+	${cpm_SOURCE_DIR}/src/logger/logger.cpp
+	${cpm_SOURCE_DIR}/src/dep-man/lockfile.cpp
+	${cpm_SOURCE_DIR}/src/package.cpp
+	${cpm_SOURCE_DIR}/src/paths.cpp
+	${cpm_SOURCE_DIR}/src/semver.cpp
+	${cpm_SOURCE_DIR}/src/util.cpp
 )
 
 add_executable(test_package_config
 	test_package_config.cpp
-	${CMAKE_SOURCE_DIR}/src/logger/logger.cpp
-	${CMAKE_SOURCE_DIR}/src/script/package_config.cpp
-	${CMAKE_SOURCE_DIR}/src/package.cpp
-	${CMAKE_SOURCE_DIR}/src/paths.cpp
-	${CMAKE_SOURCE_DIR}/src/semver.cpp
-	${CMAKE_SOURCE_DIR}/src/util.cpp
+	${cpm_SOURCE_DIR}/src/logger/logger.cpp
+	${cpm_SOURCE_DIR}/src/script/package_config.cpp
+	${cpm_SOURCE_DIR}/src/package.cpp
+	${cpm_SOURCE_DIR}/src/paths.cpp
+	${cpm_SOURCE_DIR}/src/semver.cpp
+	${cpm_SOURCE_DIR}/src/util.cpp
 )
 
 add_executable(test_semver
 	test_semver.cpp
-	${CMAKE_SOURCE_DIR}/src/semver.cpp
-	${CMAKE_SOURCE_DIR}/src/util.cpp
+	${cpm_SOURCE_DIR}/src/semver.cpp
+	${cpm_SOURCE_DIR}/src/util.cpp
 )
 
 add_executable(test_util
 	test_util.cpp
-	${CMAKE_SOURCE_DIR}/src/util.cpp
+	${cpm_SOURCE_DIR}/src/util.cpp
 )
 
 # setup_target_for_coverage_gcovr_html(
