@@ -37,12 +37,14 @@ add_executable(cpm
 	src/util.cpp
 )
 
-add_subdirectory(lib/argparse)
-add_subdirectory(lib/cpr)
-add_subdirectory(lib/json)
-add_subdirectory(lib/spdlog)
-add_subdirectory(lib/sqlite3)
-add_subdirectory(lib/zip)
+# The argument EXCLUDE_FROM_ALL prevents these libraries from installing their
+# own files together with CPM's files
+add_subdirectory(lib/argparse EXCLUDE_FROM_ALL)
+add_subdirectory(lib/cpr EXCLUDE_FROM_ALL)
+add_subdirectory(lib/json EXCLUDE_FROM_ALL)
+add_subdirectory(lib/spdlog EXCLUDE_FROM_ALL)
+add_subdirectory(lib/sqlite3 EXCLUDE_FROM_ALL)
+add_subdirectory(lib/zip EXCLUDE_FROM_ALL)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND CPM_BUILD_TESTS)
 	include(CTest)
 	enable_testing()
