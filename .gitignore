@@ -305,5 +305,7 @@ doc/*.xwm
 
 ##### Custom #####
 
-build/
 .vscode/
+build/
+debug/
+release/
