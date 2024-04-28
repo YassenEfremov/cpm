@@ -1,0 +1,12 @@
+<CPackWiXPatch>
+	<CPackWiXFragment Id="CM_CP_bin.cpm.exe">
+		<Environment 
+			Id="CPMSystemPathEntryENV" 
+			Name="PATH" 
+			Value="[INSTALL_ROOT]bin" 
+			Permanent="no" 
+			Part="last" 
+			Action="set" 
+			System="yes" />
+	</CPackWiXFragment>
+</CPackWiXPatch>
