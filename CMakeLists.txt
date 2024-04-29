@@ -93,10 +93,32 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${cpm_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${cpm_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${cpm_VERSION_PATCH}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
+
+# !!WARNING!!
+# When packaging on Windows MAKE SURE that CMAKE_INSTALL_PREFIX and the path
+# used by the generated installer MATCH, e.g. they both point to either
+# "Program Files" or "Program Files (x86)". You should check this by hand as
+# currently I'm not aware of a better way to do it. We usually build a 64 bit
+# executable, so on Windows the only way that I'm currently aware of to avoid
+# the mismatch described above is to build with MSVC (NOT Ninja!) and specifying
+# "-A x64" as the architecture. I've searched A LOT and the closest issues and
+# related resources I've found are the following:
+
+# https://stackoverflow.com/questions/68641624/why-does-cmake-default-to-program-files-x86-when-compiling-64-bit-program
+# https://gitlab.kitware.com/cmake/cmake/blob/master/Source/cmLocalGenerator.cxx#L435 <-- the actual CMake code that sets CMAKE_INSTALL_PREFIX to its default value
+
+# And in the CMake documentation
+# https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
+# https://cmake.org/cmake/help/latest/cpack_gen/wix.html#variable:CPACK_WIX_ROOT_FOLDER_ID
+
+# The variable CPACK_INSTALL_PREFIX is not documented AT ALL but the following line could fix all of out issues if it worked (it doesn't at the moment)
+# set(CPACK_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
+
 set(CPACK_WIX_UPGRADE_GUID "1EA4429B-1C1D-4488-A415-9438C71DEA1A")
 list(APPEND CPACK_WIX_PATCH_FILE "${PROJECT_SOURCE_DIR}/cmake/system_path_entry_env.xml")
 
 # Other installers
 # set(CPACK_INNOSETUP_USE_MODERN_WIZARD ON)		# Requires CMake 3.27 or later
-# set(CPACK_NSIS_MODIFY_PATH ON)
+# set(CPACK_NSIS_MODIFY_PATH ON)	# Doesn't work, says that PATH is too long
+
 include(CPack)
